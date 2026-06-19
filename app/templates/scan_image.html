@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Image Analysis — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+  <div class="page-hero text-start pb-3">
+    <div class="mb-2"><span class="nx-badge" style="color:var(--orange);border:1px solid rgba(255,140,0,.3)"><i class="fas fa-image me-1"></i>IMAGE FORENSICS MODULE</span></div>
+    <h1>Malicious Image <span class="text-cyan">Detection</span></h1>
+    <p>Scan images for hidden QR codes, embedded URLs, OCR text extraction, and social engineering content.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-upload me-2"></i>Upload Image for Analysis</div>
+        <form action="{{ url_for('scanner.scan_image') }}" method="POST" enctype="multipart/form-data" id="imgForm" onsubmit="startImgScan()">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="upload-zone" id="dropZone" onclick="document.getElementById('imgFileInput').click()">
+            <div class="upload-icon" style="color:var(--orange)"><i class="fas fa-image"></i></div>
+            <div class="fw-bold mb-1">Drop image here or click to browse</div>
+            <div class="text-muted small">PNG, JPG, GIF, BMP, WEBP — up to 16MB</div>
+            <div id="filePreviewWrap" class="mt-3" style="display:none;">
+              <img id="filePreview" src="" alt="preview" style="max-height:200px;border-radius:8px;border:1px solid var(--border);">
+              <div id="fileNameLabel" class="text-cyan small mt-2 mono"></div>
+            </div>
+          </div>
+          <input type="file" id="imgFileInput" name="image_file" accept=".png,.jpg,.jpeg,.gif,.bmp,.webp" style="display:none" onchange="previewFile(this)">
+          <button type="submit" class="btn-cyber-primary w-100 mt-4" style="font-size:1rem;padding:14px;background:linear-gradient(135deg,var(--orange),#c0392b);" id="imgSubmitBtn">
+            <i class="fas fa-microscope me-2"></i>ANALYZE IMAGE
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-search me-2"></i>What We Detect</div>
+        <div class="d-flex flex-column gap-2">
+          {% for icon, label, desc in [
+            ('fas fa-qrcode','Hidden QR Codes','Auto-decoded and threat-analyzed'),
+            ('fas fa-link','Embedded URLs','Extracted from OCR text, checked for phishing'),
+            ('fas fa-font','OCR Text Extraction','Reads all visible text in the image'),
+            ('fas fa-user-secret','Social Engineering','30+ scam/urgency keyword detection'),
+            ('fas fa-info-circle','Image Metadata','EXIF data extraction and analysis'),
+          ] %}
+          <div class="qr-type-row">
+            <i class="{{ icon }}" style="width:18px;text-align:center;color:var(--orange);"></i>
+            <div>
+              <span class="fw-semibold" style="font-size:.88rem;">{{ label }}</span>
+              <span class="text-muted small ms-2">{{ desc }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.qr-type-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(209, 187, 161, 0.02);}
+</style>
+<script>
+function previewFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{document.getElementById('filePreview').src=e.target.result;document.getElementById('fileNameLabel').textContent=file.name;document.getElementById('filePreviewWrap').style.display='block';};reader.readAsDataURL(file);}
+const dz=document.getElementById('dropZone');
+['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add('drag-over');}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove('drag-over');}));
+dz.addEventListener('drop',ev=>{const file=ev.dataTransfer.files[0];if(file){const input=document.getElementById('imgFileInput');const dt=new DataTransfer();dt.items.add(file);input.files=dt.files;previewFile(input);}});
+function startImgScan(){const inp=document.getElementById('imgFileInput');if(!inp.files.length)return;document.getElementById('imgSubmitBtn').innerHTML='<span class="scan-spinner"></span>ANALYZING...';terminalLog('[ IMG ] Image received — starting forensic analysis','info');terminalLog('[ IMG ] Running OCR, QR detection, keyword scan...','info');}
+</script>
+{% endblock %}

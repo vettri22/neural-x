@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+venv/
+env/
+.venv/
+
+# Flask / App
+instance/
+*.db
+*.sqlite3
+logs/
+app/static/screenshots/*.png
+app/static/uploads/*
+app/static/reports/*.pdf
+!app/static/screenshots/.gitkeep
+!app/static/uploads/.gitkeep
+!app/static/reports/.gitkeep
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+*.log

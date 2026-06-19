@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  neural-x:
+    build: .
+    container_name: neural-x-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///instance/neural_x.db}
+      - GOOGLE_SAFE_BROWSING_API_KEY=${GOOGLE_SAFE_BROWSING_API_KEY:-AIzaSyD9HBuOUlsaP3AvzRYmYeYZnFHLKStCF78}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-6714d0846c936e6a005f63196b28e57df5f633695cd3207e82f83ec85b139c7f}
+    volumes:
+      - ./instance:/app/instance
+      - ./logs:/app/logs
+      - ./app/static/screenshots:/app/app/static/screenshots
+      - ./app/static/uploads:/app/app/static/uploads
+      - ./app/static/reports:/app/app/static/reports
+    depends_on:
+      - db
+    networks:
+      - neural-x-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: neural-x-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: neural_x
+      POSTGRES_USER: ${DB_USER:-neural}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-neural_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - neural-x-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neural"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: neural-x-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - neural-x
+    networks:
+      - neural-x-net
+
+volumes:
+  postgres_data:
+
+networks:
+  neural-x-net:
+    driver: bridge

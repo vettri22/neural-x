@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Scan #{{ scan.id }} — NEURAL-X{% endblock %}
+
+{% block content %}
+{% set score = scan.threat_score | int %}
+{% set cat = scan.risk_category %}
+{% set color_map = {'Safe':'#00ff88','Suspicious':'#ffcc00','High Risk':'#ff8c00','Critical Threat':'#ff2055'} %}
+{% set color = color_map.get(cat,'#888') %}
+
+<div class="container-fluid px-4 px-md-5 py-4">
+  <nav class="mb-3">
+    <a href="{{ url_for('main.index') }}" class="text-muted small text-decoration-none"><i class="fas fa-home me-1"></i>Dashboard</a>
+    <span class="text-muted mx-2 small">/</span>
+    <a href="{{ url_for('history.index') }}" class="text-muted small text-decoration-none">History</a>
+    <span class="text-muted mx-2 small">/</span>
+    <span class="text-cyan small">Scan #{{ scan.id }}</span>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="glass-card text-center mb-4">
+        <div class="section-title justify-content-center"><i class="fas fa-receipt me-2"></i>SCAN #{{ scan.id }}</div>
+        <div class="score-ring-wrap my-3">
+          <div class="score-ring" style="background:conic-gradient({{ color }} {{ score }}%, rgba(255,255,255,0.05) 0%);">
+            <div class="score-inner">
+              <div class="score-number" style="color:{{ color }};">{{ score }}</div>
+              <div class="score-max text-muted">/100</div>
+            </div>
+          </div>
+        </div>
+        <div class="nx-badge badge-{{ 'safe' if cat=='Safe' else 'suspicious' if cat=='Suspicious' else 'high' if cat=='High Risk' else 'critical' }} d-inline-block" style="font-size:.95rem;padding:7px 18px;">{{ cat }}</div>
+        <div class="scan-meta-grid mt-3">
+          <div class="meta-item"><div class="meta-label">Type</div><div class="meta-val">{{ scan.scan_type.upper() }}</div></div>
+          <div class="meta-item"><div class="meta-label">SSL</div><div class="meta-val {{ 'text-green' if scan.ssl_valid else 'text-red' }}">{{ '✓ Valid' if scan.ssl_valid else '✗ Invalid' }}</div></div>
+          <div class="meta-item"><div class="meta-label">Domain Age</div><div class="meta-val">{{ scan.domain_age_days ~ 'd' if scan.domain_age_days else '—' }}</div></div>
+          <div class="meta-item"><div class="meta-label">Date</div><div class="meta-val" style="font-size:.7rem;">{{ scan.scan_date.strftime('%m/%d/%Y') if scan.scan_date else '—' }}</div></div>
+        </div>
+      </div>
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-download me-2"></i>Export</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="/api/report/{{ scan.id }}" target="_blank" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+            <i class="fas fa-file-pdf me-2"></i>PDF Report
+          </a>
+          <a href="{{ url_for('history.index') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-arrow-left me-2"></i>Back to History
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-info-circle me-2"></i>Scan Details</div>
+        <div class="intel-row"><span class="intel-key">URL / Target</span><span class="intel-val mono small" style="word-break:break-all;max-width:70%;">{{ scan.url or '—' }}</span></div>
+        <div class="intel-row"><span class="intel-key">Domain</span><span class="intel-val">{{ scan.domain or '—' }}</span></div>
+        <div class="intel-row"><span class="intel-key">Scan Date</span><span class="intel-val mono">{{ scan.scan_date.strftime('%Y-%m-%d %H:%M:%S UTC') if scan.scan_date else '—' }}</span></div>
+        {% if scan.qr_content %}
+        <div class="intel-row"><span class="intel-key">QR Content</span><span class="intel-val mono small" style="word-break:break-all;max-width:70%;">{{ scan.qr_content[:100] }}</span></div>
+        {% endif %}
+      </div>
+
+      {% if extra.get('risk_factors') %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-triangle-exclamation me-2 text-red"></i>Risk Factors</div>
+        {% for f in extra.risk_factors %}<div class="risk-factor-item"><i class="fas fa-circle-exclamation icon"></i><span>{{ f }}</span></div>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if extra.get('recommendations') %}
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-lightbulb me-2 text-yellow"></i>Recommendations</div>
+        {% for r in extra.recommendations %}<div class="rec-item"><i class="fas fa-circle-check icon"></i><span>{{ r }}</span></div>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.scan-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.meta-item{background:rgba(51, 148, 159, 0.03);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
+.meta-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);}
+.meta-val{font-size:.9rem;font-weight:700;margin-top:2px;}
+.intel-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(12, 236, 221, 0.04);font-size:.85rem;}
+.intel-key{color:var(--text-muted);font-size:.78rem;}
+.intel-val{color:var(--text);font-weight:500;text-align:right;}
+</style>
+{% endblock %}

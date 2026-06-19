@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}URL Scanner — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+  <div class="page-hero text-start pb-3">
+    <div class="mb-2"><span class="nx-badge badge-suspicious"><i class="fas fa-link me-1"></i>URL THREAT ENGINE</span></div>
+    <h1>URL <span class="text-cyan">Threat Scanner</span></h1>
+    <p>Analyze any URL for phishing, malware, typosquatting, brand impersonation, and more.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-radar me-2"></i>Target URL</div>
+        <form action="{{ url_for('scanner.scan_url') }}" method="POST" id="urlForm" onsubmit="startScan(this)">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="url" name="url" id="urlInput" class="cyber-input form-control form-control-lg"
+              placeholder="https://suspicious-site.com/login?verify=1"
+              required autocomplete="off" autofocus>
+            <div class="form-text text-muted mt-2">
+              <i class="fas fa-info-circle me-1"></i>
+              Supports HTTP/HTTPS URLs. Analysis includes ML scoring, domain intelligence, and reputation feeds.
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="row g-2 mb-4">
+            <div class="col-sm-4">
+              <label class="cyber-check">
+                <input type="checkbox" name="screenshot" value="1" checked>
+                <span class="check-label"><i class="fas fa-camera me-1 text-cyan"></i>Capture Screenshot</span>
+              </label>
+            </div>
+            <div class="col-sm-4">
+              <label class="cyber-check">
+                <input type="checkbox" name="domain_intel" value="1" checked>
+                <span class="check-label"><i class="fas fa-globe me-1 text-cyan"></i>Domain Intelligence</span>
+              </label>
+            </div>
+            <div class="col-sm-4">
+              <label class="cyber-check">
+                <input type="checkbox" name="reputation" value="1" checked>
+                <span class="check-label"><i class="fas fa-shield me-1 text-cyan"></i>Reputation Feeds</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-cyber-primary w-100" style="font-size:1rem;padding:14px;">
+            <i class="fas fa-bolt me-2"></i>ANALYZE THREAT
+          </button>
+        </form>
+      </div>
+
+      <!-- What we detect -->
+      <div class="glass-card mt-4">
+        <div class="section-title"><i class="fas fa-magnifying-glass me-2"></i>Detection Capabilities</div>
+        <div class="row g-3">
+          {% for item in [
+            ('fas fa-fish','Phishing Detection','Identifies credential harvesting and fake login pages'),
+            ('fas fa-t','Typosquatting','Detects character substitution tricks like PayPa1.com'),
+            ('fas fa-building','Brand Impersonation','Spots domains mimicking PayPal, Google, Microsoft, Apple'),
+            ('fas fa-network-wired','IP-Based URLs','Flags URLs using raw IP addresses'),
+            ('fas fa-mask','URL Obfuscation','Catches encoded characters and double-redirect patterns'),
+            ('fas fa-arrows-turn-right','Redirect Chains','Identifies forwarding and cloaking patterns'),
+            ('fas fa-globe','Scam TLDs','Flags .tk, .ml, .xyz, .top, .icu and other risky TLDs'),
+            ('fas fa-key','Keyword Scoring','Scores based on 30+ phishing/urgency keywords'),
+          ] %}
+          <div class="col-sm-6">
+            <div class="detect-item">
+              <i class="{{ item[0] }} text-cyan me-2"></i>
+              <div>
+                <div class="detect-title">{{ item[1] }}</div>
+                <div class="detect-desc">{{ item[2] }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Threat level guide -->
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-gauge me-2"></i>Threat Level Guide</div>
+        <div class="d-flex flex-column gap-3">
+          <div class="threat-guide-item">
+            <div class="threat-dot" style="background:var(--green)"></div>
+            <div>
+              <div class="fw-bold text-green">Safe <span class="text-muted fw-normal">(0–19)</span></div>
+              <div class="small text-muted">No significant threats detected</div>
+            </div>
+          </div>
+          <div class="threat-guide-item">
+            <div class="threat-dot" style="background:var(--yellow)"></div>
+            <div>
+              <div class="fw-bold text-yellow">Suspicious <span class="text-muted fw-normal">(20–44)</span></div>
+              <div class="small text-muted">Some risk factors present — exercise caution</div>
+            </div>
+          </div>
+          <div class="threat-guide-item">
+            <div class="threat-dot" style="background:var(--orange)"></div>
+            <div>
+              <div class="fw-bold text-orange">High Risk <span class="text-muted fw-normal">(45–69)</span></div>
+              <div class="small text-muted">Multiple indicators — avoid interaction</div>
+            </div>
+          </div>
+          <div class="threat-guide-item">
+            <div class="threat-dot" style="background:var(--red)"></div>
+            <div>
+              <div class="fw-bold text-red">Critical Threat <span class="text-muted fw-normal">(70–100)</span></div>
+              <div class="small text-muted">High-confidence malicious — do not visit</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API info -->
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-code me-2"></i>REST API</div>
+        <p class="text-muted small mb-3">Integrate URL scanning into your application:</p>
+        <div class="code-block">
+          <span class="code-method">POST</span> /api/scan-url<br>
+          <span class="code-comment">Content-Type: application/json</span><br><br>
+          {<br>
+          &nbsp;&nbsp;<span class="code-key">"url"</span>: <span class="code-val">"https://..."</span><br>
+          }
+        </div>
+        <a href="{{ url_for('api.api_stats') }}" target="_blank" class="btn-cyber-outline mt-3 d-block text-center" style="font-size:.8rem;">
+          <i class="fas fa-external-link me-1"></i>View API Stats
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scanning overlay -->
+<div class="scanning-overlay" id="scanOverlay">
+  <div class="scan-pulse"><i class="fas fa-shield-halved"></i></div>
+  <div class="scan-status-text" id="scanStatusText">INITIALIZING SCAN...</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="scanProgressBar"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.cyber-check { display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px 12px; border-radius:8px; border:1px solid var(--border); transition:all .2s; }
+.cyber-check:hover { border-color:var(--cyan); background:rgba(104, 220, 232, 0.04); }
+.cyber-check input[type=checkbox] { accent-color:var(--cyan); width:15px; height:15px; }
+.check-label { font-size:.83rem; color:var(--text-muted); }
+.detect-item { display:flex; align-items:flex-start; gap:10px; padding:8px; border-radius:8px; }
+.detect-item:hover { background:rgba(85, 193, 205, 0.04); }
+.detect-title { font-size:.85rem; font-weight:600; }
+.detect-desc { font-size:.75rem; color:var(--text-muted); }
+.threat-guide-item { display:flex; align-items:center; gap:12px; }
+.threat-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.code-block { background:rgba(75, 59, 59, 0.4); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:.78rem; color:var(--text-muted); line-height:1.8; }
+.code-method { color:var(--green); font-weight:700; }
+.code-comment { color:#edeaea; }
+.code-key { color:var(--cyan); }
+.code-val { color:var(--yellow); }
+.progress-bar-wrap { width:280px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; margin-top:8px; }
+.progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--cyan),var(--green)); border-radius:2px; width:0; transition:width 3s ease; }
+</style>
+<script>
+function startScan(form) {
+  const url = document.getElementById('urlInput').value;
+  if (!url) return;
+  const overlay = document.getElementById('scanOverlay');
+  const statusEl = document.getElementById('scanStatusText');
+  const bar = document.getElementById('scanProgressBar');
+  overlay.classList.add('active');
+  const steps = [
+    'PARSING TARGET URL...',
+    'EXTRACTING DOMAIN FEATURES...',
+    'RUNNING ML CLASSIFIER...',
+    'CHECKING REPUTATION FEEDS...',
+    'PERFORMING DOMAIN LOOKUP...',
+    'VERIFYING SSL CERTIFICATE...',
+    'CAPTURING SCREENSHOT...',
+    'GENERATING THREAT SCORE...'
+  ];
+  let i = 0;
+  terminalLog('[ URL ] Target received: ' + url.substring(0,60), 'info');
+  const interval = setInterval(() => {
+    if (i < steps.length) {
+      statusEl.textContent = steps[i];
+      bar.style.width = ((i+1) / steps.length * 100) + '%';
+      terminalLog('[ SCAN ] ' + steps[i], 'system');
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 600);
+}
+</script>
+{% endblock %}
