@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Scan History — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Scan <span class="text-cyan">History</span></h2>
+      <p class="text-muted small mb-0">Browse, search, and export all scan records</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('history.export_csv') }}" class="btn-cyber-outline" style="font-size:.82rem;padding:8px 14px;">
+        <i class="fas fa-download me-1"></i>Export CSV
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="glass-card mb-4">
+    <form method="GET" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="small text-muted mb-1">Search URL / Domain</label>
+        <input type="text" name="q" value="{{ search }}" class="cyber-input form-control" placeholder="Search...">
+      </div>
+      <div class="col-md-3">
+        <label class="small text-muted mb-1">Risk Category</label>
+        <select name="category" class="cyber-input form-select">
+          <option value="">All Categories</option>
+          {% for c in ['Safe','Suspicious','High Risk','Critical Threat'] %}
+          <option value="{{ c }}" {{ 'selected' if category == c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="small text-muted mb-1">Scan Type</label>
+        <select name="type" class="cyber-input form-select">
+          <option value="">All Types</option>
+          {% for t in ['url','qr','image'] %}
+          <option value="{{ t }}" {{ 'selected' if scan_type == t }}>{{ t.upper() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn-cyber-primary w-100" style="padding:10px;">
+          <i class="fas fa-filter me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="glass-card p-0" style="overflow:hidden;">
+    <div class="table-responsive">
+      <table class="cyber-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Type</th>
+            <th>Target</th>
+            <th>Score</th>
+            <th>Risk</th>
+            <th>Domain Age</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if scans %}
+            {% for s in scans %}
+            <tr>
+              <td class="mono text-muted" style="font-size:.78rem;">#{{ s.id }}</td>
+              <td>
+                <span class="type-icon type-{{ s.scan_type }}">
+                  <i class="fas fa-{{ 'link' if s.scan_type=='url' else 'qrcode' if s.scan_type=='qr' else 'image' }}"></i>
+                  {{ s.scan_type.upper() }}
+                </span>
+              </td>
+              <td>
+                <div class="url-truncate" title="{{ s.url or s.qr_content or 'Image scan' }}">
+                  {{ (s.url or s.qr_content or 'Image scan') | truncate(60) }}
+                </div>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="score-bar-wrap">
+                    <div class="score-bar" style="width:{{ s.threat_score }}%;background:{{ '#00ff88' if s.threat_score < 20 else '#ffcc00' if s.threat_score < 45 else '#ff8c00' if s.threat_score < 70 else '#ff2055' }};"></div>
+                  </div>
+                  <span class="mono" style="font-size:.82rem;min-width:28px;">{{ s.threat_score | int }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="nx-badge badge-{{ 'safe' if s.risk_category=='Safe' else 'suspicious' if s.risk_category=='Suspicious' else 'high' if s.risk_category=='High Risk' else 'critical' }}" style="font-size:.72rem;">
+                  {{ s.risk_category }}
+                </span>
+              </td>
+              <td class="text-muted small">{{ s.domain_age_days ~ 'd' if s.domain_age_days else '—' }}</td>
+              <td class="mono text-muted" style="font-size:.75rem;">{{ s.scan_date.strftime('%m/%d %H:%M') if s.scan_date else '—' }}</td>
+              <td>
+                <a href="{{ url_for('history.detail', scan_id=s.id) }}" class="btn-detail">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="fas fa-inbox fa-2x mb-3 d-block opacity-25"></i>
+              No scan records found{% if search %} matching "{{ search }}"{% endif %}.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination and pagination.pages > 1 %}
+  <div class="d-flex justify-content-center mt-4">
+    <nav>
+      <ul class="pagination cyber-pagination">
+        {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&q={{ search }}&category={{ category }}&type={{ scan_type }}"><i class="fas fa-chevron-left"></i></a></li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="?page={{ p }}&q={{ search }}&category={{ category }}&type={{ scan_type }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&q={{ search }}&category={{ category }}&type={{ scan_type }}"><i class="fas fa-chevron-right"></i></a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.type-icon{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;}
+.type-url{background:rgba(0,229,255,.1);color:var(--cyan);}
+.type-qr{background:rgba(191,96,255,.1);color:var(--purple);}
+.type-image{background:rgba(255,140,0,.1);color:var(--orange);}
+.btn-detail{background:rgba(0,229,255,.08);border:1px solid var(--border);color:var(--cyan);padding:4px 10px;border-radius:6px;font-size:.78rem;text-decoration:none;transition:all .2s;}
+.btn-detail:hover{background:rgba(0,229,255,.18);color:var(--cyan);}
+.cyber-pagination .page-link{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);font-size:.82rem;}
+.cyber-pagination .page-item.active .page-link{background:var(--cyan);border-color:var(--cyan);color:#000;font-weight:700;}
+.cyber-pagination .page-link:hover{background:rgba(0,229,255,.1);color:var(--cyan);}
+</style>
+{% endblock %}

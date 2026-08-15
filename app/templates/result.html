@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}Scan Result — NEURAL-X{% endblock %}
+
+{% block content %}
+{% set score = scan.threat_score | int %}
+{% set cat = scan.risk_category %}
+{% set color_map = {'Safe': '#00ff88', 'Suspicious': '#ffcc00', 'High Risk': '#ff8c00', 'Critical Threat': '#ff2055'} %}
+{% set color = color_map.get(cat, '#888') %}
+{% set extra = scan.extra_data | from_json if scan.extra_data else {} %}
+{% set risk_factors = extra.get('risk_factors', url_result.risk_factors if url_result else []) %}
+{% set recommendations = extra.get('recommendations', url_result.recommendations if url_result else []) %}
+
+<div class="container-fluid px-4 px-md-5 py-4">
+
+  <!-- Breadcrumb -->
+  <nav class="mb-3">
+    <a href="{{ url_for('main.index') }}" class="text-muted small text-decoration-none"><i class="fas fa-home me-1"></i>Dashboard</a>
+    <span class="text-muted small mx-2">/</span>
+    <a href="{{ url_for('scanner.scan_url') }}" class="text-muted small text-decoration-none">URL Scanner</a>
+    <span class="text-muted small mx-2">/</span>
+    <span class="text-cyan small">Result #{{ scan.id }}</span>
+  </nav>
+
+  <!-- v4: Prevention Banner -->
+  {% if final_risk and final_risk.prevention_action %}
+  {% set pa = final_risk.prevention_action %}
+  <div class="glass-card mb-4 prevention-banner prevention-{{ pa }}">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        {% if pa == 'block' %}
+          <i class="fas fa-ban fa-2x text-red"></i>
+          <div>
+            <div class="fw-bold text-red" style="font-size:1.05rem;">ACCESS BLOCKED — {{ final_risk.risk_level_display }}</div>
+            <div class="text-muted small">This site was blocked by NEURAL-X protection. Final Risk Score: {{ final_risk.final_score }}/100.</div>
+          </div>
+        {% elif pa == 'warn' %}
+          <i class="fas fa-triangle-exclamation fa-2x text-yellow"></i>
+          <div>
+            <div class="fw-bold text-yellow" style="font-size:1.05rem;">WARNING — {{ final_risk.risk_level_display }}</div>
+            <div class="text-muted small">Proceed with caution. Final Risk Score: {{ final_risk.final_score }}/100.</div>
+          </div>
+        {% else %}
+          <i class="fas fa-shield-check fa-2x text-green"></i>
+          <div>
+            <div class="fw-bold text-green" style="font-size:1.05rem;">ALLOWED — {{ final_risk.risk_level_display }}</div>
+            <div class="text-muted small">No blocking risk indicators. Final Risk Score: {{ final_risk.final_score if final_risk.final_score is not none else 'N/A' }}/100.</div>
+          </div>
+        {% endif %}
+      </div>
+      {% if pa in ('block','warn') %}
+      <a href="{{ url_for('main.index') }}" class="btn-cyber-outline text-decoration-none" style="font-size:.82rem;padding:8px 16px;white-space:nowrap;">
+        <i class="fas fa-arrow-left me-1"></i>Go Back to Safety
+      </a>
+      {% endif %}
+    </div>
+    <div class="text-muted mt-2" style="font-size:.72rem;">
+      Scanned URL: <span class="mono">{{ scan.url }}</span> &nbsp;|&nbsp; Timestamp: <span class="mono">{{ scan.scan_date.strftime('%Y-%m-%d %H:%M:%S UTC') if scan.scan_date else 'N/A' }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- LEFT: Score + verdict -->
+    <div class="col-lg-4">
+      <div class="glass-card text-center mb-4">
+        <div class="section-title justify-content-center"><i class="fas fa-gauge-high me-2"></i>THREAT SCORE</div>
+
+        <!-- Score ring -->
+        <div class="score-ring-wrap my-3">
+          <div class="score-ring"
+            style="--score-color:{{ color }};--score-pct:{{ score }}%;background:conic-gradient({{ color }} {{ score }}%, rgba(255,255,255,0.05) 0%);">
+            <div class="score-inner">
+              <div class="score-number" style="color:{{ color }};">{{ score }}</div>
+              <div class="score-max text-muted">/100</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nx-badge badge-{{ 'safe' if cat=='Safe' else 'suspicious' if cat=='Suspicious' else 'high' if cat=='High Risk' else 'critical' }} d-inline-block mb-3" style="font-size:1rem;padding:8px 20px;">
+          {% if cat == 'Safe' %}<i class="fas fa-shield-check me-2"></i>
+          {% elif cat == 'Suspicious' %}<i class="fas fa-triangle-exclamation me-2"></i>
+          {% elif cat == 'High Risk' %}<i class="fas fa-circle-exclamation me-2"></i>
+          {% else %}<i class="fas fa-skull-crossbones me-2"></i>{% endif %}
+          {{ cat }}
+        </div>
+
+        <div class="scan-meta-grid mt-3">
+          <div class="meta-item">
+            <div class="meta-label">Domain Age</div>
+            <div class="meta-val">{{ scan.domain_age_days ~ ' days' if scan.domain_age_days else 'Unknown' }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">SSL</div>
+            <div class="meta-val {% if scan.ssl_valid %}text-green{% else %}text-red{% endif %}">
+              {{ '✓ Valid' if scan.ssl_valid else '✗ Invalid' }}
+            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Scan Type</div>
+            <div class="meta-val">{{ scan.scan_type.upper() }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Scan ID</div>
+            <div class="meta-val mono">#{{ scan.id }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-download me-2"></i>Actions</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="{{ url_for('history.export_pdf', scan_id=scan.id) }}" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+            <i class="fas fa-file-pdf me-2"></i>Download PDF Report
+          </a>
+          <a href="{{ url_for('scanner.scan_url') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-redo me-2"></i>Scan Another URL
+          </a>
+          <a href="{{ url_for('history.index') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-clock-rotate-left me-2"></i>View History
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Details -->
+    <div class="col-lg-8">
+
+      <!-- URL -->
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-link me-2"></i>Analyzed Target</div>
+        <div class="url-display">
+          <i class="fas fa-link text-cyan me-2"></i>
+          <span class="mono" style="word-break:break-all;font-size:.9rem;">{{ scan.url }}</span>
+        </div>
+        {% if scan.domain %}
+        <div class="mt-2 text-muted small">
+          <i class="fas fa-globe me-1"></i>Domain: <span class="text-cyan">{{ scan.domain }}</span>
+          &nbsp;|&nbsp; Scanned: <span class="mono">{{ scan.scan_date.strftime('%Y-%m-%d %H:%M:%S UTC') if scan.scan_date else 'N/A' }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- v4: Multi-Signal Risk Analysis -->
+      {% if final_risk and final_risk.signals %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-layer-group me-2"></i>Multi-Signal Risk Analysis</div>
+        <div class="row g-3">
+          {% set sig_labels = {'url_ml':'URL / ML Risk','domain':'Domain Risk','visual':'Visual Risk','behavior':'Behavior Risk'} %}
+          {% for key, label in sig_labels.items() %}
+          {% set sig = final_risk.signals.get(key, {}) %}
+          <div class="col-6 col-md-3">
+            <div class="signal-card">
+              <div class="signal-label">{{ label }}</div>
+              {% if sig.available %}
+              <div class="signal-score">{{ sig.score | round(0, 'floor') | int }}<span class="signal-max">/100</span></div>
+              {% else %}
+              <div class="signal-score text-muted" style="font-size:1.1rem;">Unavailable</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="text-muted small">Fused with configurable weights: {{ final_risk.weights_used }}</div>
+          <div class="nx-badge badge-{{ 'safe' if final_risk.risk_level=='SAFE' else 'suspicious' if final_risk.risk_level=='LOW_MEDIUM' else 'high' if final_risk.risk_level=='HIGH' else 'critical' }}">
+            Overall: {{ final_risk.risk_level_display }}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- v4: Why is this dangerous? -->
+      {% if final_risk and final_risk.reasons %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-circle-question me-2 text-cyan"></i>Why is this dangerous?</div>
+        {% for reason in final_risk.reasons %}
+        <div class="risk-factor-item">
+          <i class="fas fa-circle-exclamation icon"></i>
+          <span>{{ reason }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Risk Factors -->
+      {% if risk_factors %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-triangle-exclamation me-2 text-red"></i>Risk Factors Detected</div>
+        {% for factor in risk_factors %}
+        <div class="risk-factor-item">
+          <i class="fas fa-circle-exclamation icon"></i>
+          <span>{{ factor }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Recommendations -->
+      {% if recommendations %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-lightbulb me-2 text-yellow"></i>Security Recommendations</div>
+        {% for rec in recommendations %}
+        <div class="rec-item">
+          <i class="fas fa-circle-check icon"></i>
+          <span>{{ rec }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Domain Intelligence -->
+      {% if domain_info and domain_info.whois %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-globe me-2"></i>Domain Intelligence</div>
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="intel-row"><span class="intel-key">Registrar</span><span class="intel-val">{{ domain_info.whois.get('registrar','N/A') }}</span></div>
+            <div class="intel-row"><span class="intel-key">Country</span><span class="intel-val">{{ domain_info.whois.get('registrant_country','N/A') }}</span></div>
+            <div class="intel-row"><span class="intel-key">Created</span><span class="intel-val mono">{{ domain_info.whois.get('creation_date','N/A')[:10] if domain_info.whois.get('creation_date') else 'N/A' }}</span></div>
+            <div class="intel-row"><span class="intel-key">Expires</span><span class="intel-val mono">{{ domain_info.whois.get('expiration_date','N/A')[:10] if domain_info.whois.get('expiration_date') else 'N/A' }}</span></div>
+          </div>
+          <div class="col-sm-6">
+            <div class="intel-row"><span class="intel-key">Domain Age</span><span class="intel-val">{{ domain_info.domain_age_days ~ ' days' if domain_info.domain_age_days else 'Unknown' }}</span></div>
+            <div class="intel-row"><span class="intel-key">SSL Valid</span>
+              <span class="intel-val {% if domain_info.ssl.get('valid') %}text-green{% else %}text-red{% endif %}">
+                {{ '✓ Yes' if domain_info.ssl.get('valid') else '✗ No' }}
+              </span>
+            </div>
+            {% if domain_info.ssl.get('days_remaining') is not none %}
+            <div class="intel-row"><span class="intel-key">SSL Expires</span><span class="intel-val">{{ domain_info.ssl.get('days_remaining') }} days</span></div>
+            {% endif %}
+            <div class="intel-row"><span class="intel-key">Rep. Score</span>
+              <span class="intel-val">{{ domain_info.reputation_score | int }}/100</span>
+            </div>
+          </div>
+        </div>
+        {% if domain_info.dns and domain_info.dns.get('A') %}
+        <div class="mt-3">
+          <div class="intel-key mb-1">A Records (IP)</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for ip in domain_info.dns.get('A', [])[:5] %}
+            <span class="nx-badge badge-suspicious mono" style="font-size:.75rem;">{{ ip }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Screenshot -->
+      {% if screenshot_path %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-camera me-2"></i>Website Preview</div>
+        <div class="screenshot-wrap">
+          <img src="{{ url_for('static', filename=screenshot_path) }}" alt="Website preview" class="screenshot-img">
+          <div class="screenshot-overlay"><i class="fas fa-expand me-1"></i>Preview</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Reputation -->
+      {% if reputation and reputation.raw %}
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-shield-halved me-2"></i>Reputation Feed Results</div>
+        <div class="row g-3">
+          {% for source, data in reputation.raw.items() %}
+          <div class="col-sm-6">
+            <div class="rep-card {% if data.get('threat_found') or data.get('positives',0) > 0 %}rep-danger{% else %}rep-ok{% endif %}">
+              <div class="rep-name">{{ source.replace('_',' ').title() }}</div>
+              <div class="rep-status">
+                {% if not data.get('checked', true) and data.get('error') %}
+                  <span class="text-muted"><i class="fas fa-minus me-1"></i>Not configured</span>
+                {% elif data.get('threat_found') or data.get('positives',0) > 0 %}
+                  <span class="text-red"><i class="fas fa-bug me-1"></i>THREAT FOUND</span>
+                {% else %}
+                  <span class="text-green"><i class="fas fa-check me-1"></i>Clean</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.url-display { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; padding:12px 16px; }
+.scan-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.meta-item { background:rgba(0,229,255,0.03); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+.meta-label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); }
+.meta-val { font-size:.9rem; font-weight:700; margin-top:2px; }
+.intel-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:.85rem; }
+.intel-key { color:var(--text-muted); font-size:.78rem; }
+.intel-val { color:var(--text); font-weight:500; text-align:right; }
+.screenshot-wrap { position:relative; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+.screenshot-img { width:100%; display:block; opacity:.85; transition:opacity .3s; }
+.screenshot-wrap:hover .screenshot-img { opacity:1; }
+.screenshot-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.6)); color:#fff; font-size:.75rem; padding:12px; }
+.rep-card { padding:12px; border-radius:8px; border:1px solid var(--border); }
+.rep-card.rep-danger { border-color:rgba(255,32,85,.3); background:rgba(255,32,85,.04); }
+.rep-card.rep-ok { border-color:rgba(0,255,136,.2); background:rgba(0,255,136,.03); }
+.rep-name { font-size:.78rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px; }
+.rep-status { font-size:.85rem; font-weight:600; }
+.prevention-banner.prevention-block { border-color:rgba(255,32,85,.4); background:rgba(255,32,85,.06); }
+.prevention-banner.prevention-warn { border-color:rgba(255,204,0,.4); background:rgba(255,204,0,.06); }
+.prevention-banner.prevention-allow { border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.04); }
+.signal-card { background:rgba(0,229,255,0.03); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; }
+.signal-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:4px; }
+.signal-score { font-size:1.5rem; font-weight:800; color:var(--cyan); }
+.signal-max { font-size:.8rem; color:var(--text-muted); font-weight:400; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  terminalLog('[ RESULT ] Scan #{{ scan.id }} complete', 'success');
+  terminalLog('[ SCORE ] Threat score: {{ score }}/100 — {{ cat }}', '{{ "danger" if cat == "Critical Threat" else "warning" if cat in ["High Risk","Suspicious"] else "success" }}');
+  {% if risk_factors %}
+  terminalLog('[ THREATS ] {{ risk_factors | length }} risk factor(s) identified', 'warning');
+  {% endif %}
+});
+</script>
+{% endblock %}

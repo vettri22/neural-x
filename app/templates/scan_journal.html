@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Journal Verifier — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+
+  <div class="page-hero text-start pb-3">
+    <div class="mb-2">
+      <span class="nx-badge" style="background:rgba(191,96,255,0.15);border-color:rgba(191,96,255,0.4);color:#bf60ff;">
+        <i class="fas fa-book-open me-1"></i>JOURNAL AUTHENTICITY MODULE
+      </span>
+    </div>
+    <h1>Journal <span style="color:#bf60ff;">Authenticity Verifier</span></h1>
+    <p class="text-muted">
+      Detect fake journals, predatory publishers, fake conferences, and fraudulent DOI pages.
+      Cross-checks DOAJ, Crossref, and OpenAlex in real-time.
+    </p>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- LEFT: Input form -->
+    <div class="col-lg-8">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-radar me-2"></i>Target Journal / Publisher URL</div>
+        <form action="{{ url_for('scanner.scan_journal') }}" method="POST" id="journalForm" onsubmit="startScan(this)">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="url" name="url" id="journalInput" class="cyber-input form-control form-control-lg"
+              placeholder="https://suspicious-journal.com"
+              required autocomplete="off" autofocus>
+            <div class="form-text text-muted mt-2">
+              <i class="fas fa-info-circle me-1"></i>
+              Enter any journal, publisher, or conference website. Supports HTTP/HTTPS.
+              Analysis may take 15–30 seconds due to live database checks.
+            </div>
+          </div>
+          <button type="submit" class="btn-cyber-primary w-100" style="font-size:1rem;padding:14px;background:linear-gradient(135deg,#bf60ff,#7b2ff7);">
+            <i class="fas fa-magnifying-glass me-2"></i>VERIFY JOURNAL AUTHENTICITY
+          </button>
+        </form>
+      </div>
+
+      <!-- Detection capabilities -->
+      <div class="glass-card mt-4">
+        <div class="section-title"><i class="fas fa-shield-halved me-2"></i>What We Check</div>
+        <div class="row g-3">
+          {% set checks = [
+            ('fas fa-tag',                'Website Classification',  'Identifies journal/publisher/database/university/conference type'),
+            ('fas fa-database',           'DOAJ Verification',       'Cross-checks Directory of Open Access Journals'),
+            ('fas fa-link',               'Crossref Registry',       'Verifies publisher DOI registration'),
+            ('fas fa-globe',              'OpenAlex Index',          'Checks scholarly works indexing'),
+            ('fas fa-building-columns',   'ROR Lookup',              'Research Organization Registry verification'),
+            ('fas fa-calendar',           'Domain Age',              'Flags newly registered domains'),
+            ('fas fa-lock',               'SSL Certificate',         'Validates HTTPS/TLS security'),
+            ('fas fa-id-card',            'ISSN Validation',         'Verifies ISSN format and mod-11 checksum'),
+            ('fas fa-newspaper',          'Editorial Board',         'Checks for real editorial information'),
+            ('fas fa-file-contract',      'Ethics Policy',           'Detects missing publication ethics / COPE'),
+            ('fas fa-tag',                'Predatory Signals',       'Detects rapid/guaranteed publication claims'),
+            ('fas fa-shield-virus',       'Fake Indexing',           'Catches unverifiable Scopus/WoS/SCI claims'),
+            ('fas fa-arrows-turn-to-dots','Redirect Detection',      'Tracks suspicious URL redirect chains'),
+            ('fas fa-spell-check',        'Typosquatting',           'Detects publisher brand impersonation'),
+            ('fas fa-triangle-exclamation','Conflict Detection',     'Flags when trusted sources disagree'),
+            ('fas fa-thumbs-up',          'Positive Signals',        'Tracks trust-building evidence'),
+          ] %}
+          {% for icon, title, desc in checks %}
+          <div class="col-sm-6 col-md-4">
+            <div class="feature-chip">
+              <i class="{{ icon }} text-purple me-2"></i>
+              <div>
+                <div style="font-size:.8rem;font-weight:600;color:#e0d0ff;">{{ title }}</div>
+                <div style="font-size:.72rem;color:var(--text-muted);">{{ desc }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: info panel -->
+    <div class="col-lg-4">
+      <div class="glass-card" style="border-color:rgba(191,96,255,0.25);">
+        <div class="section-title" style="color:#bf60ff;"><i class="fas fa-circle-info me-2"></i>Databases Checked</div>
+        <ul class="list-unstyled mb-0" style="font-size:.85rem;">
+          <li class="mb-3 d-flex gap-3 align-items-start">
+            <i class="fas fa-check-circle mt-1" style="color:#00ff88;"></i>
+            <div>
+              <div style="font-weight:600;color:#e0d0ff;">DOAJ</div>
+              <div class="text-muted" style="font-size:.75rem;">Directory of Open Access Journals — the gold standard for OA journal verification.</div>
+            </div>
+          </li>
+          <li class="mb-3 d-flex gap-3 align-items-start">
+            <i class="fas fa-check-circle mt-1" style="color:#00ff88;"></i>
+            <div>
+              <div style="font-weight:600;color:#e0d0ff;">Crossref</div>
+              <div class="text-muted" style="font-size:.75rem;">Publisher and DOI registry. Legitimate publishers register here for DOI assignment.</div>
+            </div>
+          </li>
+          <li class="mb-3 d-flex gap-3 align-items-start">
+            <i class="fas fa-check-circle mt-1" style="color:#00ff88;"></i>
+            <div>
+              <div style="font-weight:600;color:#e0d0ff;">OpenAlex</div>
+              <div class="text-muted" style="font-size:.75rem;">Open scholarly graph — indexes works from legitimate academic sources.</div>
+            </div>
+          </li>
+          <li class="mb-3 d-flex gap-3 align-items-start">
+            <i class="fas fa-circle-info mt-1" style="color:#00ccff;"></i>
+            <div>
+              <div style="font-weight:600;color:#e0d0ff;">NOT VERIFIED ≠ FAKE</div>
+              <div class="text-muted" style="font-size:.75rem;">If an external database is unreachable, we show <strong>NOT VERIFIED</strong> — never <strong>FAKE</strong>. Verify directly if needed.</div>
+            </div>
+          </li>
+          <li class="d-flex gap-3 align-items-start">
+            <i class="fas fa-exclamation-circle mt-1" style="color:#ffcc00;"></i>
+            <div>
+              <div style="font-weight:600;color:#e0d0ff;">Disclaimer</div>
+              <div class="text-muted" style="font-size:.75rem;">All scores are heuristic estimates. Always verify independently at <a href="https://thinkchecksubmit.org" target="_blank" style="color:#bf60ff;">Think.Check.Submit</a>.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="glass-card mt-3" style="border-color:rgba(255,100,0,0.2);">
+        <div class="section-title" style="color:#ff8c00;"><i class="fas fa-triangle-exclamation me-2"></i>Warning Signs</div>
+        <ul style="font-size:.8rem;color:var(--text-muted);padding-left:1.2rem;margin:0;">
+          <li class="mb-1">Rapid / guaranteed publication</li>
+          <li class="mb-1">Pay after acceptance</li>
+          <li class="mb-1">Unverifiable Scopus/WoS claims</li>
+          <li class="mb-1">No real editorial board</li>
+          <li class="mb-1">Missing ethics / retraction policy</li>
+          <li class="mb-1">Invalid or no ISSN</li>
+          <li class="mb-1">Very new domain (&lt; 6 months)</li>
+          <li>No publisher in Crossref</li>
+        </ul>
+      </div>
+
+      <div class="glass-card mt-3">
+        <div class="section-title"><i class="fas fa-clock me-2"></i>Recent Journal Scans</div>
+        {% set journal_scans = namespace(items=[]) %}
+        <!-- placeholder — populated via JS if needed -->
+        <p class="text-muted" style="font-size:.8rem;">No recent journal scans yet.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.text-purple { color: #bf60ff !important; }
+.feature-chip {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(191,96,255,0.06);
+  border: 1px solid rgba(191,96,255,0.15);
+  border-radius: 8px; padding: 10px 12px;
+}
+</style>
+{% endblock %}

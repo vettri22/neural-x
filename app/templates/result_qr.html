@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}QR Result — NEURAL-X{% endblock %}
+
+{% block content %}
+{% set score = scan.threat_score | int %}
+{% set cat = scan.risk_category %}
+{% set color_map = {'Safe':'#00ff88','Suspicious':'#ffcc00','High Risk':'#ff8c00','Critical Threat':'#ff2055'} %}
+{% set color = color_map.get(cat,'#888') %}
+
+<div class="container-fluid px-4 px-md-5 py-4">
+  <nav class="mb-3">
+    <a href="{{ url_for('main.index') }}" class="text-muted small text-decoration-none"><i class="fas fa-home me-1"></i>Dashboard</a>
+    <span class="text-muted small mx-2">/</span>
+    <a href="{{ url_for('scanner.scan_qr') }}" class="text-muted small text-decoration-none">QR Intelligence</a>
+    <span class="text-muted small mx-2">/</span>
+    <span class="text-cyan small">Result #{{ scan.id }}</span>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <!-- Score card -->
+      <div class="glass-card text-center mb-4">
+        <div class="section-title justify-content-center"><i class="fas fa-qrcode me-2"></i>QR SCAN RESULT</div>
+
+        {% if qr_result.qr_found %}
+        <div class="score-ring-wrap my-3">
+          <div class="score-ring" style="background:conic-gradient({{ color }} {{ score }}%, rgba(255,255,255,0.05) 0%);">
+            <div class="score-inner">
+              <div class="score-number" style="color:{{ color }};">{{ score }}</div>
+              <div class="score-max text-muted">/100</div>
+            </div>
+          </div>
+        </div>
+        <div class="nx-badge badge-{{ 'safe' if cat=='Safe' else 'suspicious' if cat=='Suspicious' else 'high' if cat=='High Risk' else 'critical' }} d-inline-block mb-3" style="font-size:.95rem;padding:7px 18px;">
+          {{ cat }}
+        </div>
+        {% else %}
+        <div class="py-4">
+          <i class="fas fa-circle-xmark fa-3x text-muted mb-3"></i>
+          <div class="fw-bold">No QR Code Detected</div>
+          <div class="text-muted small mt-2">The image did not contain a recognizable QR code.</div>
+        </div>
+        {% endif %}
+
+        <!-- Content type badge -->
+        {% if qr_result.classification %}
+        <div class="meta-pill mt-2">
+          <span style="font-size:1.2rem;">{{ qr_result.classification.icon }}</span>
+          <span>{{ qr_result.classification.display_label }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Actions -->
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-tools me-2"></i>Actions</div>
+        <div class="d-flex flex-column gap-2">
+          {% if scan.id %}
+          <a href="{{ url_for('history.export_pdf', scan_id=scan.id) }}" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+            <i class="fas fa-file-pdf me-2"></i>Download PDF Report
+          </a>
+          {% endif %}
+          <a href="{{ url_for('scanner.scan_qr') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-redo me-2"></i>Scan Another QR
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <!-- Decoded content -->
+      {% if qr_result.qr_found and qr_result.raw_content %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-unlock me-2 text-green"></i>Decoded QR Content</div>
+        <div class="qr-content-box">
+          <pre class="qr-content-text">{{ qr_result.raw_content }}</pre>
+        </div>
+
+        {% if qr_result.classification and qr_result.classification.parsed_data %}
+        <div class="mt-3">
+          <div class="section-title" style="font-size:.7rem;"><i class="fas fa-list me-2"></i>PARSED FIELDS</div>
+          {% for key, val in qr_result.classification.parsed_data.items() %}
+          <div class="intel-row">
+            <span class="intel-key">{{ key.title() }}</span>
+            <span class="intel-val mono" style="word-break:break-all;max-width:70%;">{{ val }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Risk factors -->
+      {% if qr_result.risk_factors %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-triangle-exclamation me-2 text-red"></i>Risk Factors</div>
+        {% for factor in qr_result.risk_factors %}
+        <div class="risk-factor-item"><i class="fas fa-circle-exclamation icon"></i><span>{{ factor }}</span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- URL analysis (if QR contained URL) -->
+      {% if qr_result.url_analysis %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-link me-2 text-cyan"></i>URL Threat Analysis</div>
+        <div class="alert-inline mb-3">
+          <i class="fas fa-info-circle me-2 text-cyan"></i>
+          QR payload is a URL — full phishing analysis was performed automatically.
+        </div>
+        {% for factor in qr_result.url_analysis.get('risk_factors',[]) %}
+        <div class="risk-factor-item"><i class="fas fa-circle-exclamation icon"></i><span>{{ factor }}</span></div>
+        {% endfor %}
+        {% if qr_result.url_analysis.get('recommendations') %}
+        <div class="mt-3">
+          <div class="section-title" style="font-size:.7rem;"><i class="fas fa-lightbulb me-2"></i>RECOMMENDATIONS</div>
+          {% for rec in qr_result.url_analysis.recommendations %}
+          <div class="rec-item"><i class="fas fa-circle-check icon"></i><span>{{ rec }}</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Domain Intel -->
+      {% if domain_info and domain_info.get('whois',{}).get('available') %}
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-globe me-2"></i>Domain Intelligence</div>
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="intel-row"><span class="intel-key">Registrar</span><span class="intel-val">{{ domain_info.whois.get('registrar','N/A') }}</span></div>
+            <div class="intel-row"><span class="intel-key">Domain Age</span><span class="intel-val">{{ domain_info.domain_age_days ~ ' days' if domain_info.domain_age_days else 'Unknown' }}</span></div>
+          </div>
+          <div class="col-sm-6">
+            <div class="intel-row"><span class="intel-key">SSL</span>
+              <span class="intel-val {% if domain_info.ssl.get('valid') %}text-green{% else %}text-red{% endif %}">{{ '✓ Valid' if domain_info.ssl.get('valid') else '✗ Invalid' }}</span>
+            </div>
+            <div class="intel-row"><span class="intel-key">Country</span><span class="intel-val">{{ domain_info.whois.get('registrant_country','N/A') }}</span></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.qr-content-box { background:rgba(0,0,0,.4); border:1px solid var(--border); border-radius:8px; padding:16px; overflow:auto; }
+.qr-content-text { color:var(--green); font-family:monospace; font-size:.9rem; white-space:pre-wrap; word-break:break-all; margin:0; }
+.intel-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:.85rem; }
+.intel-key { color:var(--text-muted); font-size:.78rem; }
+.intel-val { color:var(--text); font-weight:500; text-align:right; }
+.meta-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:rgba(0,229,255,.06); border:1px solid var(--border); border-radius:20px; font-size:.85rem; }
+.alert-inline { background:rgba(0,229,255,.06); border:1px solid rgba(0,229,255,.15); border-radius:8px; padding:10px 14px; font-size:.85rem; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  {% if qr_result.qr_found %}
+  terminalLog('[ QR ] QR code decoded successfully', 'success');
+  terminalLog('[ QR ] Content type: {{ qr_result.classification.content_type if qr_result.classification else "unknown" }}', 'qr');
+  {% if qr_result.url_analysis %}
+  terminalLog('[ QR ] URL payload — phishing analysis triggered', 'warning');
+  {% endif %}
+  terminalLog('[ SCORE ] Threat score: {{ score }}/100 — {{ cat }}', '{{ "danger" if cat == "Critical Threat" else "warning" if "Risk" in cat or "Suspicious" in cat else "success" }}');
+  {% else %}
+  terminalLog('[ QR ] No QR code detected in image', 'warning');
+  {% endif %}
+});
+</script>
+{% endblock %}

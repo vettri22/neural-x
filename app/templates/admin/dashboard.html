@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="fas fa-chart-line text-cyan me-2"></i>Admin <span class="text-cyan">Dashboard</span></h2>
+      <p class="text-muted small mb-0">Platform statistics and threat intelligence overview</p>
+    </div>
+    <div class="status-pill"><span class="status-dot"></span>Live Data</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="stat-card total">
+        <i class="fas fa-database stat-icon"></i>
+        <div class="stat-value text-cyan">{{ stats.total_scans }}</div>
+        <div class="stat-label">Total Scans</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card threats">
+        <i class="fas fa-skull-crossbones stat-icon"></i>
+        <div class="stat-value text-red">{{ stats.threats_blocked }}</div>
+        <div class="stat-label">Threats Detected</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card safe">
+        <i class="fas fa-shield-check stat-icon"></i>
+        <div class="stat-value text-green">{{ stats.safe_scans }}</div>
+        <div class="stat-label">Safe Scans</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card suspicious">
+        <i class="fas fa-triangle-exclamation stat-icon"></i>
+        <div class="stat-value text-yellow">{{ stats.suspicious_scans }}</div>
+        <div class="stat-label">Suspicious</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Activity chart -->
+    <div class="col-lg-8">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-chart-area me-2"></i>Daily Scan Activity (Last 30 Days)</div>
+        <div style="position:relative;height:260px;">
+          <canvas id="activityChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan type doughnut -->
+    <div class="col-lg-4">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-chart-pie me-2"></i>Scan Type Distribution</div>
+        <div style="position:relative;height:220px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="typeChart"></canvas>
+        </div>
+        <div class="d-flex justify-content-around mt-3">
+          <div class="text-center"><div class="stat-value text-cyan" style="font-size:1.2rem;">{{ stats.scan_types.url or 0 }}</div><div class="stat-label">URL</div></div>
+          <div class="text-center"><div class="stat-value text-purple" style="font-size:1.2rem;">{{ stats.scan_types.qr or 0 }}</div><div class="stat-label">QR</div></div>
+          <div class="text-center"><div class="stat-value text-orange" style="font-size:1.2rem;">{{ stats.scan_types.image or 0 }}</div><div class="stat-label">Image</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk breakdown -->
+    <div class="col-lg-5">
+      <div class="glass-card h-100">
+        <div class="section-title"><i class="fas fa-gauge me-2"></i>Risk Category Breakdown</div>
+        {% set categories = [('Safe','green',stats.safe_scans),('Suspicious','yellow',stats.suspicious_scans),('High Risk','orange', stats.threats_blocked // 2 if stats.threats_blocked else 0),('Critical Threat','red', stats.threats_blocked - stats.threats_blocked // 2 if stats.threats_blocked else 0)] %}
+        {% set total = stats.total_scans if stats.total_scans > 0 else 1 %}
+        {% for label, col, count in categories %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-{{ col }}">{{ label }}</span>
+            <span class="small mono">{{ count }}</span>
+          </div>
+          <div class="score-bar-wrap" style="height:8px;">
+            <div class="score-bar" style="width:{{ (count/total*100)|int }}%;background:var(--{{ col }});"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Top malicious domains -->
+    <div class="col-lg-7">
+      <div class="glass-card h-100">
+        <div class="section-title"><i class="fas fa-skull me-2 text-red"></i>Top Malicious Domains</div>
+        {% if top_domains %}
+        <div class="table-responsive">
+          <table class="cyber-table">
+            <thead><tr><th>Domain</th><th>Detections</th><th>Threat Bar</th></tr></thead>
+            <tbody>
+              {% set max_count = top_domains[0][1] if top_domains else 1 %}
+              {% for domain, count in top_domains %}
+              <tr>
+                <td class="mono" style="font-size:.83rem;color:var(--red);">{{ domain }}</td>
+                <td class="text-center"><span class="nx-badge badge-critical">{{ count }}</span></td>
+                <td style="min-width:100px;">
+                  <div class="score-bar-wrap"><div class="score-bar" style="width:{{ (count/max_count*100)|int }}%;background:var(--red);"></div></div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted"><i class="fas fa-shield-check fa-2x mb-2 d-block text-green opacity-50"></i>No malicious domains detected yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- API Usage -->
+    <div class="col-12">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-plug me-2"></i>Quick Actions</div>
+        <div class="row g-3">
+          {% for icon, label, href, col in [
+            ('fas fa-link','Scan URL','/scan/url','cyan'),
+            ('fas fa-qrcode','Scan QR','/scan/qr','purple'),
+            ('fas fa-image','Scan Image','/scan/image','orange'),
+            ('fas fa-clock-rotate-left','View History','/history/','green'),
+            ('fas fa-file-export','Export CSV','/history/export/csv','yellow'),
+            ('fas fa-code','API Stats','/api/stats','red'),
+          ] %}
+          <div class="col-6 col-md-4 col-lg-2">
+            <a href="{{ href }}" class="admin-action-card text-{{ col }}">
+              <i class="{{ icon }} fa-lg mb-2 d-block"></i>
+              <div class="small">{{ label }}</div>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.admin-action-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;background:rgba(0,229,255,.03);border:1px solid var(--border);border-radius:12px;text-decoration:none;transition:all .3s;text-align:center;}
+.admin-action-card:hover{background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.3);transform:translateY(-2px);}
+</style>
+<script>
+const labels = {{ daily_labels | safe }};
+const counts = {{ daily_counts | safe }};
+
+// Activity chart
+new Chart(document.getElementById('activityChart'), {
+  type: 'line',
+  data: {
+    labels: labels.length ? labels : ['No data'],
+    datasets: [{
+      label: 'Scans',
+      data: counts.length ? counts : [0],
+      borderColor: '#00e5ff',
+      backgroundColor: 'rgba(0,229,255,0.08)',
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#00e5ff',
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(0,229,255,0.06)' }, ticks: { color: '#6a8fa8', font: { size: 10 } } },
+      y: { grid: { color: 'rgba(0,229,255,0.06)' }, ticks: { color: '#6a8fa8', font: { size: 10 } }, beginAtZero: true }
+    }
+  }
+});
+
+// Type chart
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['URL', 'QR', 'Image'],
+    datasets: [{
+      data: [{{ stats.scan_types.url or 0 }}, {{ stats.scan_types.qr or 0 }}, {{ stats.scan_types.image or 0 }}],
+      backgroundColor: ['rgba(0,229,255,0.7)', 'rgba(191,96,255,0.7)', 'rgba(255,140,0,0.7)'],
+      borderColor: ['#00e5ff','#bf60ff','#ff8c00'],
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#6a8fa8', font: { size: 11 } } } },
+    cutout: '65%'
+  }
+});
+</script>
+{% endblock %}

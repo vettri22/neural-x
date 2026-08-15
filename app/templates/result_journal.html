@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+{% block title %}Journal Analysis — NEURAL-X{% endblock %}
+
+{% block content %}
+{# ── data extraction ─────────────────────────────────────────────────────── #}
+{% set jr   = journal_result or {} %}
+{% set hd   = hybrid or {} %}
+{% set cat  = jr.get('risk_category') or scan.risk_category %}
+{% set score = jr.get('journal_score', scan.threat_score) | float %}
+{% set auth  = jr.get('authenticity_score', 100 - score) | float %}
+{% set wtype = jr.get('website_type', 'unknown') %}
+{% set wdisp = jr.get('website_type_display', 'Unknown Website') %}
+{% set org   = jr.get('organisation', '') %}
+{% set country = jr.get('country', '') %}
+{% set is_known = jr.get('is_known_safe', false) %}
+{% set conflicts = jr.get('conflicts', []) %}
+{% set positive  = jr.get('positive_signals', hd.get('positive_signals', [])) %}
+{% set risk_facs = jr.get('risk_factors', []) %}
+{% set recs      = jr.get('recommendations', []) %}
+{% set explain   = jr.get('explainability', hd.get('explainability','')) %}
+{% set api       = jr.get('api_checks', {}) %}
+{% set cf        = jr.get('content_findings', {}) %}
+{% set dims      = jr.get('trust_dimensions', {}) %}
+{% set sub       = hd.get('sub_scores', {}) %}
+{% set evidence  = jr.get('classification_evidence', []) %}
+{% set extra     = scan.extra_data | from_json if scan.extra_data else {} %}
+
+{% set color_map = {'Safe':'#00ff88','Suspicious':'#ffcc00','High Risk':'#ff8c00','Critical Threat':'#ff2055','Unknown':'#888'} %}
+{% set color = color_map.get(cat, '#888') %}
+
+{% set wtype_icon_map = {
+  'academic_database':'fas fa-database',
+  'publisher':        'fas fa-building',
+  'university':       'fas fa-graduation-cap',
+  'government':       'fas fa-landmark',
+  'research_org':     'fas fa-flask',
+  'repository':       'fas fa-archive',
+  'journal':          'fas fa-book-open',
+  'conference':       'fas fa-users',
+  'unknown':          'fas fa-question-circle'
+} %}
+{% set wtype_color_map = {
+  'academic_database':'#00ccff',
+  'publisher':        '#bf60ff',
+  'university':       '#00ff88',
+  'government':       '#00ccff',
+  'research_org':     '#7bffcc',
+  'repository':       '#aaddff',
+  'journal':          '#bf60ff',
+  'conference':       '#ffcc00',
+  'unknown':          '#888'
+} %}
+{% set wtype_color = wtype_color_map.get(wtype, '#888') %}
+{% set wtype_icon  = wtype_icon_map.get(wtype, 'fas fa-question-circle') %}
+
+<div class="container-fluid px-4 px-md-5 py-4">
+
+  {# Breadcrumb #}
+  <nav class="mb-3">
+    <a href="{{ url_for('main.index') }}" class="text-muted small text-decoration-none"><i class="fas fa-home me-1"></i>Dashboard</a>
+    <span class="text-muted mx-2 small">/</span>
+    <a href="{{ url_for('scanner.scan_journal') }}" class="text-muted small text-decoration-none">Journal Verifier</a>
+    <span class="text-muted mx-2 small">/</span>
+    <span class="small" style="color:#bf60ff;">Result #{{ scan.id }}</span>
+  </nav>
+
+  {# ── CONFLICT BANNER ──────────────────────────────────────────────────── #}
+  {% if conflicts %}
+  <div class="alert-conflict mb-4">
+    <i class="fas fa-triangle-exclamation me-2"></i>
+    <strong>VERIFICATION CONFLICT DETECTED</strong> — Trusted sources returned different results.
+    <span class="text-muted d-block mt-1" style="font-size:.82rem;">
+      Do not rely solely on this report. Verify independently using DOAJ, Crossref, and the publisher website.
+    </span>
+  </div>
+  {% endif %}
+
+  {# ── KNOWN SAFE BANNER ────────────────────────────────────────────────── #}
+  {% if is_known %}
+  <div class="alert-safe-platform mb-4">
+    <i class="fas fa-shield-check me-2"></i>
+    <strong>Recognised Legitimate Platform</strong> — This is a known {{ wdisp }}.
+    Journal verification checks are not applicable.
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    {# ═══════════════════════════════ LEFT COLUMN ════════════════════════ #}
+    <div class="col-lg-4">
+
+      {# Website Classification Card #}
+      <div class="glass-card mb-4" style="border-color:{{ wtype_color }}33;">
+        <div class="section-title" style="color:{{ wtype_color }};">
+          <i class="{{ wtype_icon }} me-2"></i>WEBSITE CLASSIFICATION
+        </div>
+        <div class="text-center py-2">
+          <div class="mb-2">
+            <i class="{{ wtype_icon }} fa-2x" style="color:{{ wtype_color }};"></i>
+          </div>
+          <div style="font-size:1.05rem;font-weight:700;color:{{ wtype_color }};">{{ wdisp }}</div>
+          {% if org %}
+          <div class="text-muted mt-1" style="font-size:.82rem;">{{ org }}</div>
+          {% endif %}
+          {% if country %}
+          <div class="text-muted" style="font-size:.78rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ country }}</div>
+          {% endif %}
+          {% if jr.get('classification_confidence') %}
+          <div class="mt-2" style="font-size:.75rem;color:var(--text-muted);">
+            Classification confidence: {{ (jr.classification_confidence * 100) | int }}%
+          </div>
+          {% endif %}
+        </div>
+
+        {# Classification evidence chips #}
+        {% if evidence %}
+        <div class="mt-2">
+          <div class="text-muted" style="font-size:.72rem;margin-bottom:5px;">Evidence:</div>
+          {% for ev in evidence %}
+          <div class="evidence-chip mb-1">
+            <i class="fas fa-check-circle me-1" style="color:#00ff88;font-size:.7rem;"></i>
+            {{ ev }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      {# Authenticity Score Ring #}
+      <div class="glass-card mb-4 text-center" style="border-color:rgba(191,96,255,0.3);">
+        <div class="section-title justify-content-center" style="color:#bf60ff;">
+          <i class="fas fa-shield-halved me-2"></i>TRUST SCORE
+        </div>
+        <div class="score-ring-wrap my-3">
+          <div class="score-ring"
+               style="background:conic-gradient({{ color }} {{ auth | int }}%, rgba(255,255,255,0.05) 0%);">
+            <div class="score-inner">
+              <div class="score-number" style="color:{{ color }};">{{ auth | int }}</div>
+              <div class="score-max text-muted">/100</div>
+            </div>
+          </div>
+        </div>
+        <div class="nx-badge d-inline-block mb-3"
+             style="background:{{ color }}22;border-color:{{ color }}66;color:{{ color }};font-size:.95rem;padding:7px 20px;">
+          {% if cat == 'Safe' %}<i class="fas fa-shield-check me-2"></i>
+          {% elif cat == 'Suspicious' %}<i class="fas fa-triangle-exclamation me-2"></i>
+          {% elif cat == 'High Risk' %}<i class="fas fa-circle-exclamation me-2"></i>
+          {% else %}<i class="fas fa-skull-crossbones me-2"></i>{% endif %}
+          {{ cat }}
+        </div>
+
+        {# Dual bar: phishing vs authenticity #}
+        <div class="px-2">
+          <div class="d-flex justify-content-between" style="font-size:.73rem;color:var(--text-muted);">
+            <span>Phishing Risk</span>
+            <span style="color:#ff8c00;">{{ hd.get('phishing_probability', score) | int }}%</span>
+          </div>
+          <div class="progress mb-2" style="height:5px;background:rgba(255,255,255,0.07);">
+            <div class="progress-bar" style="width:{{ hd.get('phishing_probability', score) | int }}%;background:#ff8c00;"></div>
+          </div>
+          <div class="d-flex justify-content-between" style="font-size:.73rem;color:var(--text-muted);">
+            <span>Journal Authenticity</span>
+            <span style="color:#bf60ff;">{{ auth | int }}%</span>
+          </div>
+          <div class="progress" style="height:5px;background:rgba(255,255,255,0.07);">
+            <div class="progress-bar" style="width:{{ auth | int }}%;background:#bf60ff;"></div>
+          </div>
+        </div>
+
+        <div class="scan-meta-grid mt-3">
+          <div class="meta-item">
+            <div class="meta-label">Domain Age</div>
+            <div class="meta-val">{{ scan.domain_age_days ~ ' days' if scan.domain_age_days else 'Unknown' }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">SSL</div>
+            <div class="meta-val {% if scan.ssl_valid %}text-green{% else %}text-red{% endif %}">
+              {{ '✓ Valid' if scan.ssl_valid else '✗ Invalid' }}
+            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Scan #</div>
+            <div class="meta-val mono">#{{ scan.id }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Score Basis</div>
+            <div class="meta-val" style="font-size:.65rem;color:var(--text-muted);">heuristic</div>
+          </div>
+        </div>
+      </div>
+
+      {# Actions #}
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-download me-2"></i>Actions</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="{{ url_for('history.export_pdf', scan_id=scan.id) }}"
+             class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+            <i class="fas fa-file-pdf me-2"></i>Download PDF Report
+          </a>
+          <a href="{{ url_for('scanner.scan_journal') }}"
+             class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-redo me-2"></i>Verify Another
+          </a>
+          <a href="{{ url_for('history.index') }}"
+             class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
+            <i class="fas fa-clock-rotate-left me-2"></i>Scan History
+          </a>
+        </div>
+        <div class="disclaimer-note mt-3">
+          <i class="fas fa-circle-info me-1"></i>
+          Scores are heuristic estimates based on observable signals.
+          Always verify independently at <a href="https://thinkchecksubmit.org" target="_blank"
+          style="color:#ffcc00;">Think.Check.Submit</a>.
+        </div>
+      </div>
+
+    </div>
+
+    {# ═══════════════════════════════ RIGHT COLUMN ═══════════════════════ #}
+    <div class="col-lg-8">
+
+      {# URL analyzed #}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-link me-2"></i>URL Analyzed</div>
+        <div class="mono text-cyan" style="word-break:break-all;font-size:.9rem;">
+          {{ scan.url or 'N/A' }}
+        </div>
+        {% if scan.domain %}
+        <div class="text-muted mt-1" style="font-size:.8rem;"><i class="fas fa-globe me-1"></i>{{ scan.domain }}</div>
+        {% endif %}
+        {% if cf.get('redirect_detected') and cf.get('final_url') %}
+        <div class="mt-1" style="font-size:.78rem;color:#ff8c00;">
+          <i class="fas fa-arrow-turn-right me-1"></i>Redirects to: {{ cf.final_url[:80] }}
+        </div>
+        {% endif %}
+      </div>
+
+      {# ── TRUST BREAKDOWN ────────────────────────────────────────────── #}
+      {% if not is_known and dims %}
+      <div class="glass-card mb-4">
+        <div class="section-title" style="color:#bf60ff;">
+          <i class="fas fa-chart-pie me-2"></i>Trust Breakdown
+          <span class="ms-auto" style="font-size:.68rem;color:var(--text-muted);font-weight:400;">
+            Higher % = more trustworthy
+          </span>
+        </div>
+        <div class="row g-2">
+          {% set dim_items = [
+            ('Website Type',     dims.get('website_type'),       wtype_color,  'fas fa-tag'),
+            ('Publisher Verify', dims.get('publisher'),          '#00ff88',    'fas fa-building'),
+            ('Domain Trust',     dims.get('domain_trust'),       '#00ccff',    'fas fa-server'),
+            ('Content Quality',  dims.get('content_quality'),    '#bf60ff',    'fas fa-file-lines'),
+            ('Index Verify',     dims.get('index_verification'), '#ffcc00',    'fas fa-database'),
+          ] %}
+          {% for label, val, col, icon in dim_items %}
+          {% if val is not none %}
+          <div class="col-12">
+            <div class="d-flex align-items-center gap-3">
+              <i class="{{ icon }}" style="color:{{ col }};width:16px;"></i>
+              <div style="width:130px;font-size:.8rem;color:var(--text-muted);">{{ label }}</div>
+              <div class="progress flex-grow-1" style="height:8px;background:rgba(255,255,255,0.07);border-radius:4px;">
+                <div class="progress-bar" style="width:{{ val | int }}%;background:{{ col }};border-radius:4px;transition:width 1.2s ease;"></div>
+              </div>
+              <div style="width:40px;text-align:right;font-size:.82rem;font-family:var(--font-mono);color:{{ col }};">
+                {{ val | int }}%
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── DATABASE VERIFICATION ────────────────────────────────────────── #}
+      <div class="glass-card mb-4">
+        <div class="section-title" style="color:#00ccff;">
+          <i class="fas fa-database me-2"></i>Academic Database Verification
+        </div>
+        <div class="row g-3">
+          {% set db_list = [
+            ('DOAJ',     api.get('doaj',{}),     'Directory of Open Access Journals'),
+            ('Crossref', api.get('crossref',{}), 'Publisher DOI Registry'),
+            ('OpenAlex', api.get('openalex',{}), 'Scholarly Works Index'),
+            ('ROR',      api.get('ror',{}),      'Research Organization Registry'),
+          ] %}
+          {% for name, res, desc in db_list %}
+          {% set st = res.get('status','not_verified') %}
+          <div class="col-sm-6 col-md-3">
+            <div class="db-check-card {{ 'found' if st == 'found' else ('not-found' if st == 'not_found' else 'unverified') }}">
+              {% if st == 'found' %}
+                <i class="fas fa-check-circle fa-lg mb-2 text-green"></i>
+                <div class="db-status text-green">VERIFIED</div>
+              {% elif st == 'not_found' %}
+                <i class="fas fa-times-circle fa-lg mb-2 text-orange"></i>
+                <div class="db-status text-orange">NOT FOUND</div>
+              {% elif st in ('disabled','skipped') %}
+                <i class="fas fa-minus-circle fa-lg mb-2 text-muted"></i>
+                <div class="db-status text-muted">SKIPPED</div>
+              {% else %}
+                <i class="fas fa-circle-question fa-lg mb-2 text-muted"></i>
+                <div class="db-status text-muted">NOT VERIFIED</div>
+              {% endif %}
+              <div class="db-name">{{ name }}</div>
+              <div class="db-desc">{{ desc }}</div>
+              {% if st == 'found' %}
+                {% set detail = res.get('title') or res.get('member_name') or res.get('display_name') or res.get('name') %}
+                {% if detail %}
+                <div class="db-detail">{{ detail[:45] }}</div>
+                {% endif %}
+                {% if res.get('works_count') %}
+                <div style="font-size:.68rem;color:var(--text-muted);">{{ '{:,}'.format(res.works_count) }} works indexed</div>
+                {% endif %}
+              {% elif st == 'not_verified' and res.get('error') %}
+                <div style="font-size:.68rem;color:#6a8fa8;margin-top:3px;">{{ res.error[:40] }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {# Not-verified explanation #}
+        {% set has_unverified = api.values() | selectattr('status','equalto','not_verified') | list %}
+        {% if has_unverified %}
+        <div class="mt-3 p-3" style="background:rgba(255,204,0,0.06);border:1px solid rgba(255,204,0,0.2);border-radius:8px;font-size:.78rem;color:var(--text-muted);">
+          <i class="fas fa-circle-info me-2" style="color:#ffcc00;"></i>
+          <strong style="color:#ffcc00;">NOT VERIFIED</strong> means the external database was unreachable or timed out —
+          it does <strong>not</strong> mean the journal is fake. Check the database directly if needed.
+        </div>
+        {% endif %}
+      </div>
+
+      {# ── EXPLAINABILITY PANEL ─────────────────────────────────────────── #}
+      <div class="glass-card mb-4" style="border-color:rgba(0,229,255,0.2);">
+        <div class="section-title" style="color:#00e5ff;">
+          <i class="fas fa-brain me-2"></i>AI Explanation
+        </div>
+        <p style="font-size:.85rem;line-height:1.7;color:var(--text-muted);margin:0;">
+          {{ explain or 'No explanation generated.' }}
+        </p>
+      </div>
+
+      {# ── POSITIVE SIGNALS ────────────────────────────────────────────── #}
+      {% if positive %}
+      <div class="glass-card mb-4" style="border-color:rgba(0,255,136,0.2);">
+        <div class="section-title" style="color:#00ff88;">
+          <i class="fas fa-thumbs-up me-2"></i>Positive Trust Signals
+        </div>
+        <ul class="list-unstyled mb-0">
+          {% for sig in positive %}
+          <li class="d-flex gap-2 mb-2 align-items-start" style="font-size:.84rem;">
+            <i class="fas fa-circle-check mt-1" style="color:#00ff88;font-size:.65rem;"></i>
+            <span>{{ sig }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {# ── RISK FACTORS ────────────────────────────────────────────────── #}
+      {% if risk_facs %}
+      <div class="glass-card mb-4">
+        <div class="section-title" style="color:{{ color }};">
+          <i class="fas fa-triangle-exclamation me-2"></i>Risk Factors
+        </div>
+        <ul class="list-unstyled mb-0">
+          {% for f in risk_facs %}
+          <li class="d-flex gap-2 mb-2 align-items-start" style="font-size:.84rem;">
+            <i class="fas fa-circle-dot mt-1" style="color:{{ color }};font-size:.6rem;"></i>
+            <span>{{ f }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {# ── CONTENT ANALYSIS ────────────────────────────────────────────── #}
+      {% if cf %}
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-file-magnifying-glass me-2"></i>Content Analysis</div>
+
+        <div class="row g-2 mb-3">
+          {% set checks = [
+            ('Contact Info',      cf.get('has_contact'),          'fas fa-envelope'),
+            ('Editorial Board',   cf.get('has_editorial_board'),  'fas fa-users'),
+            ('Peer Review',       cf.get('has_peer_review'),      'fas fa-people-arrows'),
+            ('Ethics Policy',     cf.get('has_ethics_policy'),    'fas fa-file-contract'),
+            ('Author Guidelines', cf.get('has_author_guidelines'),'fas fa-pen-to-square'),
+            ('robots.txt',       cf.get('has_robots'),           'fas fa-robot'),
+            ('Sitemap',          cf.get('has_sitemap'),          'fas fa-sitemap'),
+          ] %}
+          {% for label, val, icon in checks %}
+          <div class="col-6 col-md-4">
+            <div class="content-check-row {{ 'present' if val else 'absent' }}">
+              <i class="{{ icon }}" style="width:14px;"></i>
+              <span>{{ label }}</span>
+              <span class="ms-auto">{{ '✓' if val else '✗' }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if cf.get('issns_found') %}
+        <div class="mb-3">
+          <div class="text-muted mb-1" style="font-size:.75rem;">ISSN Numbers Found:</div>
+          {% for issn in cf.issns_found %}
+          <span class="badge mono me-1 mb-1"
+                style="background:{{ 'rgba(255,80,0,0.15)' if issn in cf.get('issns_invalid',[]) else 'rgba(0,229,255,0.1)' }};
+                       color:{{ '#ff5000' if issn in cf.get('issns_invalid',[]) else 'var(--cyan)' }};
+                       border:1px solid;border-color:{{ '#ff5000' if issn in cf.get('issns_invalid',[]) else 'rgba(0,229,255,0.3)' }};
+                       font-size:.75rem;">
+            {{ issn }}
+            {% if issn in cf.get('issns_invalid',[]) %}<i class="fas fa-triangle-exclamation ms-1"></i>{% endif %}
+          </span>
+          {% endfor %}
+          {% if cf.get('issns_invalid') %}
+          <div style="font-size:.72rem;color:#ff8c00;margin-top:4px;">
+            <i class="fas fa-exclamation-circle me-1"></i>
+            Invalid ISSN checksum detected — may be fabricated
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if cf.get('predatory_keywords') %}
+        <div class="mb-3">
+          <div class="text-muted mb-1" style="font-size:.75rem;">Predatory Signals:</div>
+          {% for kw in cf.predatory_keywords %}
+          <span class="badge me-1 mb-1" style="background:rgba(255,100,0,0.15);color:#ff8c00;border:1px solid rgba(255,100,0,0.3);font-size:.72rem;">
+            {{ kw }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if cf.get('unverified_indexing_claims') %}
+        <div class="mb-3">
+          <div class="text-muted mb-1" style="font-size:.75rem;">Unverifiable Indexing Claims:</div>
+          {% for c in cf.unverified_indexing_claims %}
+          <span class="badge me-1 mb-1" style="background:rgba(255,0,68,0.15);color:#ff2055;border:1px solid rgba(255,0,68,0.3);font-size:.72rem;">
+            {{ c }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if cf.get('dois_found') %}
+        <div>
+          <div class="text-muted mb-1" style="font-size:.75rem;">DOIs Found on Page:</div>
+          {% for doi in cf.dois_found %}
+          <span class="mono me-2" style="font-size:.75rem;color:var(--text-muted);">{{ doi[:50] }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# ── HYBRID SUB-SCORES ────────────────────────────────────────────── #}
+      {% if sub %}
+      <div class="glass-card mb-4">
+        <div class="section-title">
+          <i class="fas fa-sliders me-2"></i>Hybrid Engine Sub-Scores
+          <span class="ms-2" style="font-size:.68rem;color:var(--text-muted);">(heuristic estimates — not validated ML accuracy)</span>
+        </div>
+        <div class="row g-2">
+          {% for key, val in sub.items() %}
+          {% if val is not none %}
+          <div class="col-12">
+            <div class="d-flex align-items-center gap-3" style="font-size:.8rem;">
+              <div style="width:140px;color:var(--text-muted);text-transform:capitalize;">{{ key.replace('_',' ') }}</div>
+              <div class="progress flex-grow-1" style="height:5px;background:rgba(255,255,255,0.07);">
+                <div class="progress-bar" style="width:{{ val }}%;background:{% if val < 25 %}#00ff88{% elif val < 55 %}#ffcc00{% else %}#ff2055{% endif %};border-radius:3px;"></div>
+              </div>
+              <div class="mono" style="width:36px;text-align:right;font-size:.78rem;color:{% if val < 25 %}#00ff88{% elif val < 55 %}#ffcc00{% else %}#ff2055{% endif %};">{{ val }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── RECOMMENDATIONS ──────────────────────────────────────────────── #}
+      {% if recs %}
+      <div class="glass-card mb-4">
+        <div class="section-title" style="color:#ffcc00;">
+          <i class="fas fa-lightbulb me-2"></i>Recommendations
+        </div>
+        <ul class="list-unstyled mb-0">
+          {% for rec in recs %}
+          <li class="d-flex gap-2 mb-2 align-items-start" style="font-size:.84rem;">
+            <i class="fas fa-chevron-right mt-1 text-cyan" style="font-size:.65rem;"></i>
+            <span>{{ rec }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {# ── DOMAIN INTELLIGENCE ──────────────────────────────────────────── #}
+      {% if domain_info %}
+      <div class="glass-card mb-4">
+        <div class="section-title" data-bs-toggle="collapse" data-bs-target="#domCol" style="cursor:pointer;">
+          <i class="fas fa-server me-2"></i>Domain Intelligence
+          <i class="fas fa-chevron-down ms-auto" style="font-size:.7rem;color:var(--text-muted);"></i>
+        </div>
+        <div class="collapse" id="domCol">
+          {% set w = domain_info.get('whois', {}) %}
+          {% set s = domain_info.get('ssl', {}) %}
+          <div class="row g-2 mt-1" style="font-size:.8rem;">
+            <div class="col-6"><span class="text-muted">Registrar</span><br>{{ w.get('registrar','N/A') }}</div>
+            <div class="col-6"><span class="text-muted">Country</span><br>{{ w.get('registrant_country','N/A') }}</div>
+            <div class="col-6"><span class="text-muted">Created</span><br>{{ (w.get('creation_date') or 'N/A')[:10] }}</div>
+            <div class="col-6"><span class="text-muted">Expires</span><br>{{ (w.get('expiration_date') or 'N/A')[:10] }}</div>
+            <div class="col-6"><span class="text-muted">SSL Issuer</span><br>{{ s.get('issuer','N/A') }}</div>
+            <div class="col-6"><span class="text-muted">SSL Days Left</span><br>{{ s.get('days_remaining','N/A') }}</div>
+          </div>
+          {% set dns = domain_info.get('dns', {}) %}
+          {% if dns.get('A') %}
+          <div class="mt-2" style="font-size:.78rem;">
+            <span class="text-muted">A Records:</span>
+            <span class="mono ms-2">{{ dns.A | join(', ') }}</span>
+          </div>
+          {% endif %}
+          {% if dns.get('MX') %}
+          <div style="font-size:.78rem;">
+            <span class="text-muted">MX Records:</span>
+            <span class="mono ms-2">{{ dns.MX | join(', ') }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>{# end right col #}
+  </div>
+</div>
+
+<style>
+/* ── Classification ── */
+.evidence-chip {
+  background: rgba(0,229,255,0.06);
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 6px; padding: 5px 10px;
+  font-size: .75rem; color: var(--text-muted);
+}
+
+/* ── DB check cards ── */
+.db-check-card {
+  background: rgba(5,10,20,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 14px 10px;
+  text-align: center;
+  transition: border-color .2s;
+}
+.db-check-card.found   { border-color: rgba(0,255,136,0.3); }
+.db-check-card.not-found { border-color: rgba(255,140,0,0.25); }
+.db-check-card.unverified { border-color: rgba(100,120,150,0.2); }
+.db-status { font-size: .75rem; font-weight: 700; margin-bottom: 3px; }
+.db-name   { font-size: .88rem; font-weight: 700; color: var(--text-primary); margin-top:4px; }
+.db-desc   { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
+.db-detail { font-size: .7rem; color: #00ff88; margin-top: 4px; }
+
+/* ── Content checks ── */
+.content-check-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 6px; font-size: .8rem;
+}
+.content-check-row.present { background: rgba(0,255,136,0.06); color: #00ff88; }
+.content-check-row.absent  { background: rgba(255,100,0,0.05); color: #ff8c00; }
+
+/* ── Conflict / safe banners ── */
+.alert-conflict {
+  background: rgba(255,204,0,0.1);
+  border: 1px solid rgba(255,204,0,0.4);
+  border-radius: 10px; padding: 14px 18px;
+  color: #ffcc00; font-size: .88rem;
+}
+.alert-safe-platform {
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.3);
+  border-radius: 10px; padding: 14px 18px;
+  color: #00ff88; font-size: .88rem;
+}
+
+/* ── Colours ── */
+.text-green  { color: #00ff88 !important; }
+.text-orange { color: #ff8c00 !important; }
+.text-red    { color: #ff2055 !important; }
+.text-purple { color: #bf60ff !important; }
+
+.disclaimer-note {
+  background: rgba(255,204,0,0.05);
+  border: 1px solid rgba(255,204,0,0.15);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: .75rem; color: var(--text-muted);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}NEURAL-X — AI Cyber Defense Platform{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="page-hero container-fluid px-4 px-md-5">
+  <div class="row align-items-center">
+    <div class="col-lg-7">
+      <div class="mb-2">
+        <span class="nx-badge badge-safe"><i class="fas fa-circle-dot me-1"></i>LIVE THREAT INTELLIGENCE</span>
+      </div>
+      <h1 class="display-hero">NEURAL<span class="text-cyan">-X</span><br>AI Cyber Defense</h1>
+      <p class="hero-sub mt-3">
+        Enterprise-grade threat detection powered by machine learning.<br>
+        Analyze URLs, QR codes, and images for phishing, malware, and social engineering attacks.<br>Now with <span style="color:#bf60ff;">Journal Authenticity Verification</span> — detect fake journals &amp; predatory publishers.
+      </p>
+      <div class="d-flex flex-wrap gap-3 mt-4">
+        <a href="{{ url_for('scanner.scan_url') }}" class="btn-cyber-primary">
+          <i class="fas fa-link me-2"></i>Scan URL
+        </a>
+        <a href="{{ url_for('scanner.scan_qr') }}" class="btn-cyber-outline">
+          <i class="fas fa-qrcode me-2"></i>QR Intelligence
+        </a>
+        <a href="{{ url_for('scanner.scan_image') }}" class="btn-cyber-outline">
+          <i class="fas fa-image me-2"></i>Image Analysis
+        </a>
+      </div>
+    </div>
+    <div class="col-lg-5 d-none d-lg-flex justify-content-center mt-4 mt-lg-0">
+      <!-- Radar visualization -->
+      <div class="radar-container">
+        <svg class="radar-svg" width="280" height="280" viewBox="0 0 280 280">
+          <defs>
+            <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid rings -->
+          {% for r in [30,60,90,110] %}
+          <circle cx="140" cy="140" r="{{ r }}" fill="none" stroke="rgba(0,229,255,0.15)" stroke-width="1"/>
+          {% endfor %}
+          <!-- Cross lines -->
+          <line x1="140" y1="30" x2="140" y2="250" stroke="rgba(0,229,255,0.1)" stroke-width="1"/>
+          <line x1="30" y1="140" x2="250" y2="140" stroke="rgba(0,229,255,0.1)" stroke-width="1"/>
+          <line x1="62" y1="62" x2="218" y2="218" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+          <line x1="218" y1="62" x2="62" y2="218" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+          <!-- Sweep -->
+          <g class="radar-sweep" style="transform-origin:140px 140px">
+            <path d="M140,140 L140,30 A110,110 0 0,1 240,140 Z" fill="url(#sweepGrad)" opacity="0.4"/>
+          </g>
+          <!-- Blips -->
+          <circle cx="175" cy="100" r="4" fill="#ff2055" opacity="0.9">
+            <animate attributeName="opacity" values="0.9;0.2;0.9" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="110" cy="160" r="3" fill="#ffcc00" opacity="0.8">
+            <animate attributeName="opacity" values="0.8;0.1;0.8" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="190" cy="170" r="3" fill="#00ff88" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="85" cy="105" r="5" fill="#ff8c00" opacity="0.8">
+            <animate attributeName="opacity" values="0.8;0.15;0.8" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Center -->
+          <circle cx="140" cy="140" r="6" fill="#00e5ff" filter="url(#glow)"/>
+          <circle cx="140" cy="140" r="3" fill="#fff"/>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <!-- Label -->
+          <text x="140" y="272" text-anchor="middle" fill="rgba(0,229,255,0.5)" font-size="9" font-family="monospace" letter-spacing="3">THREAT RADAR</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats row -->
+<section class="container-fluid px-4 px-md-5 mt-2 mb-4">
+  <div class="row g-3">
+    <div class="col-6 col-md-3">
+      <div class="stat-card total">
+        <i class="fas fa-database stat-icon"></i>
+        <div class="stat-value text-cyan">{{ stats.total_scans }}</div>
+        <div class="stat-label">Total Scans</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card threats">
+        <i class="fas fa-skull-crossbones stat-icon"></i>
+        <div class="stat-value text-red">{{ stats.threats_blocked }}</div>
+        <div class="stat-label">Threats Detected</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card safe">
+        <i class="fas fa-shield-check stat-icon"></i>
+        <div class="stat-value text-green">{{ stats.safe_scans }}</div>
+        <div class="stat-label">Safe Scans</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card suspicious">
+        <i class="fas fa-triangle-exclamation stat-icon"></i>
+        <div class="stat-value text-yellow">{{ stats.suspicious_scans }}</div>
+        <div class="stat-label">Suspicious</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Scan + Recent Activity -->
+<section class="container-fluid px-4 px-md-5">
+  <div class="row g-4">
+    <!-- Quick URL scan -->
+    <div class="col-lg-6">
+      <div class="glass-card h-100">
+        <div class="section-title"><i class="fas fa-bolt me-2"></i>Quick URL Scan</div>
+        <form action="{{ url_for('scanner.scan_url') }}" method="POST" onsubmit="startScan(this)">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="url" name="url" class="cyber-input form-control"
+              placeholder="https://example.com — paste URL to analyze..."
+              required autocomplete="off">
+          </div>
+          <button type="submit" class="btn-cyber-primary w-100">
+            <i class="fas fa-radar me-2"></i>Analyze Threat
+          </button>
+        </form>
+        <div class="mt-4">
+          <p class="text-muted small mb-2">Detects:</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for tag in ['Phishing','Typosquatting','Brand Impersonation','IP URLs','Obfuscation','Redirect Chains','Scam TLDs'] %}
+            <span class="nx-badge badge-suspicious">{{ tag }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <a href="{{ url_for('scanner.scan_journal') }}" class="scan-module-card scan-journal text-decoration-none d-block">
+            <div class="module-icon" style="background:rgba(191,96,255,0.15);border-color:rgba(191,96,255,0.3);">
+              <i class="fas fa-book-open" style="color:#bf60ff;"></i>
+            </div>
+            <div class="module-title">Journal Verifier</div>
+            <div class="module-desc">Detect fake journals &amp; predatory publishers</div>
+            <div class="module-badge" style="color:#bf60ff;">New in v2</div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent scans -->
+    <div class="col-lg-6">
+      <div class="glass-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="section-title mb-0"><i class="fas fa-clock-rotate-left me-2"></i>Recent Scans</div>
+          <a href="{{ url_for('history.index') }}" class="btn-cyber-outline" style="padding:4px 12px;font-size:0.78rem;">View All</a>
+        </div>
+        {% if recent_scans %}
+        <div class="d-flex flex-column gap-2">
+          {% for scan in recent_scans %}
+          <a href="{{ url_for('history.detail', scan_id=scan.id) }}" class="scan-row-link">
+            <div class="scan-row">
+              <div class="scan-row-icon scan-type-{{ scan.scan_type }}">
+                <i class="fas fa-{{ 'link' if scan.scan_type=='url' else 'qrcode' if scan.scan_type=='qr' else 'image' }}"></i>
+              </div>
+              <div class="flex-grow-1 overflow-hidden">
+                <div class="scan-row-url">{{ (scan.url or scan.qr_content or 'Image scan') | truncate(55) }}</div>
+                <div class="scan-row-meta">{{ scan.scan_date.strftime('%Y-%m-%d %H:%M') if scan.scan_date else '' }}</div>
+              </div>
+              <div class="text-end">
+                <div class="nx-badge badge-{{ 'safe' if scan.risk_category=='Safe' else 'suspicious' if scan.risk_category=='Suspicious' else 'high' if scan.risk_category=='High Risk' else 'critical' }}">
+                  {{ scan.threat_score | int }}
+                </div>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-inbox fa-2x mb-3 opacity-25"></i>
+          <p class="small">No scans yet. Run your first analysis above.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature cards -->
+<section class="container-fluid px-4 px-md-5 mt-5">
+  <div class="section-title justify-content-center text-center mb-4" style="font-size:0.9rem;letter-spacing:4px;">
+    <i class="fas fa-microchip me-2"></i>PLATFORM CAPABILITIES
+  </div>
+  <div class="row g-3">
+    {% set features = [
+      ('fas fa-link','URL Threat Engine','ML-powered phishing detection with 15+ heuristic checks including typosquatting, brand impersonation, and obfuscation detection.','text-cyan'),
+      ('fas fa-qrcode','QR Intelligence','Decode any QR code and auto-classify content — URLs, WiFi, contacts, crypto wallets — with instant phishing analysis.','text-purple'),
+      ('fas fa-image','Image Forensics','OCR extraction, hidden QR detection, and social-engineering keyword scanning in uploaded images.','text-orange'),
+      ('fas fa-globe','Domain Intelligence','WHOIS lookup, DNS records, SSL certificate validation, domain age, and registrar reputation scoring.','text-green'),
+      ('fas fa-shield-halved','Threat Feeds','Google Safe Browsing, VirusTotal, URLHaus, and local blacklist integration for comprehensive coverage.','text-red'),
+      ('fas fa-file-pdf','PDF Reports','Generate branded NEURAL-X security reports with screenshots, threat scores, and remediation recommendations.','text-yellow'),
+    ] %}
+    {% for icon, title, desc, color in features %}
+    <div class="col-sm-6 col-lg-4">
+      <div class="glass-card feature-card h-100">
+        <div class="feature-icon {{ color }}"><i class="{{ icon }}"></i></div>
+        <h6 class="mt-3 mb-2 fw-bold">{{ title }}</h6>
+        <p class="text-muted small mb-0">{{ desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="mb-5 pb-3"></div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.display-hero { font-size: clamp(2.2rem,5vw,3.5rem); font-weight:900; line-height:1.05; background:linear-gradient(135deg,#fff 0%,#00e5ff 60%,#00ff88 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.hero-sub { color:#6a8fa8; font-size:1.05rem; max-width:520px; line-height:1.6; }
+.feature-card { transition:all .3s; cursor:default; }
+.feature-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,229,255,0.1); }
+.feature-icon { font-size:1.8rem; }
+.scan-row-link { text-decoration:none; }
+.scan-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:rgba(0,229,255,0.02); transition:all .2s; }
+.scan-row:hover { background:rgba(0,229,255,0.05); border-color:rgba(0,229,255,0.25); }
+.scan-row-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
+.scan-type-url   .scan-row-icon, .scan-row-icon { background:rgba(0,229,255,0.1); color:var(--cyan); }
+.scan-type-qr  .scan-row-icon { background:rgba(191,96,255,0.1); color:var(--purple); }
+.scan-type-image .scan-row-icon { background:rgba(255,140,0,0.1); color:var(--orange); }
+.scan-row-url { font-size:.84rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.scan-row-meta { font-size:.72rem; color:var(--text-muted); margin-top:1px; font-family:monospace; }
+</style>
+{% endblock %}

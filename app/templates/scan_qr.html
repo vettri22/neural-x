@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}QR Intelligence — NEURAL-X{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 px-md-5 py-4">
+  <div class="page-hero text-start pb-3">
+    <div class="mb-2"><span class="nx-badge badge-suspicious" style="color:var(--purple);border-color:rgba(191,96,255,.3)"><i class="fas fa-qrcode me-1"></i>QR INTELLIGENCE MODULE</span></div>
+    <h1>QR Code <span class="text-cyan">Intelligence</span></h1>
+    <p>Upload any QR code image — we'll decode, classify, and threat-analyze the payload automatically.</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-upload me-2"></i>Upload QR Image</div>
+        <form action="{{ url_for('scanner.scan_qr') }}" method="POST" enctype="multipart/form-data" id="qrForm" onsubmit="startQRScan()">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <!-- Drop zone -->
+          <div class="upload-zone" id="dropZone" onclick="document.getElementById('qrFileInput').click()">
+            <div class="upload-icon"><i class="fas fa-qrcode"></i></div>
+            <div class="fw-bold mb-1">Drop QR image here or click to browse</div>
+            <div class="text-muted small">PNG, JPG, GIF, BMP, WEBP — up to 16MB</div>
+            <div id="filePreviewWrap" class="mt-3" style="display:none;">
+              <img id="filePreview" src="" alt="preview" style="max-height:180px;border-radius:8px;border:1px solid var(--border);">
+              <div id="fileNameLabel" class="text-cyan small mt-2 mono"></div>
+            </div>
+          </div>
+
+          <input type="file" id="qrFileInput" name="qr_file"
+            accept=".png,.jpg,.jpeg,.gif,.bmp,.webp" style="display:none"
+            onchange="previewFile(this)">
+
+          <button type="submit" class="btn-cyber-primary w-100 mt-4" style="font-size:1rem;padding:14px;" id="qrSubmitBtn">
+            <i class="fas fa-qrcode me-2"></i>DECODE & ANALYZE
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <!-- Supported types -->
+      <div class="glass-card mb-4">
+        <div class="section-title"><i class="fas fa-list-check me-2"></i>Supported QR Types</div>
+        <div class="d-flex flex-column gap-2">
+          {% for icon, label, desc in [
+            ('fas fa-link','Web URL','Automatically performs phishing analysis'),
+            ('fas fa-phone','Phone Number','Extracts and displays phone number'),
+            ('fas fa-envelope','Email Address','Shows mailto: address'),
+            ('fas fa-wifi','WiFi Network','Decodes SSID, password, security type'),
+            ('fas fa-address-card','Contact Card','Parses vCard / meCard fields'),
+            ('fab fa-bitcoin','Crypto Wallet','Identifies Bitcoin, Ethereum, and more'),
+            ('fas fa-comment','SMS','Extracts SMS destination and message'),
+            ('fas fa-file-lines','Plain Text','Displays raw text with keyword scan'),
+          ] %}
+          <div class="qr-type-row">
+            <i class="{{ icon }} text-cyan" style="width:18px;text-align:center;"></i>
+            <div>
+              <span class="fw-semibold" style="font-size:.88rem;">{{ label }}</span>
+              <span class="text-muted small ms-2">{{ desc }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="glass-card">
+        <div class="section-title"><i class="fas fa-lightbulb me-2 text-yellow"></i>Tips</div>
+        <ul class="tip-list">
+          <li>Higher resolution images give better decode accuracy</li>
+          <li>QR codes in screenshots work too — just upload the image</li>
+          <li>URL payloads trigger full phishing analysis automatically</li>
+          <li>Non-URL content is scanned for social engineering keywords</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.qr-type-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:rgba(0,229,255,.02); }
+.tip-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.tip-list li { font-size:.84rem; color:var(--text-muted); padding-left:18px; position:relative; }
+.tip-list li::before { content:'›'; position:absolute; left:4px; color:var(--cyan); }
+</style>
+<script>
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('filePreview').src = e.target.result;
+    document.getElementById('fileNameLabel').textContent = file.name;
+    document.getElementById('filePreviewWrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('drag-over'); }));
+['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('drag-over'); }));
+dz.addEventListener('drop', ev => {
+  const file = ev.dataTransfer.files[0];
+  if (file) {
+    const input = document.getElementById('qrFileInput');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    previewFile(input);
+  }
+});
+
+function startQRScan() {
+  const inp = document.getElementById('qrFileInput');
+  if (!inp.files.length) return;
+  document.getElementById('qrSubmitBtn').innerHTML = '<span class="scan-spinner"></span>DECODING QR...';
+  terminalLog('[ QR ] Image received — initiating decode...', 'qr');
+  terminalLog('[ QR ] Running pyzbar / OpenCV decoder...', 'info');
+}
+</script>
+{% endblock %}
