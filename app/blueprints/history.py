@@ -3,14 +3,19 @@
 import csv
 import io
 import json
+<<<<<<< HEAD
 import logging
 from datetime import datetime
 from flask import (Blueprint, render_template, request, make_response,
                    current_app, Response, send_file, abort)
+=======
+from flask import Blueprint, render_template, request, make_response, current_app
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 from app.models.scan_history import ScanHistory
 from app import db
 
 history_bp = Blueprint('history', __name__)
+<<<<<<< HEAD
 logger = logging.getLogger(__name__)
 
 # Hard export cap so a single request can't be used to exhaust memory/DB.
@@ -33,6 +38,8 @@ def _build_history_query():
     if scan_type:
         q = q.filter_by(scan_type=scan_type)
     return q
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 
 
 @history_bp.route('/')
@@ -63,6 +70,7 @@ def index():
                            scan_type=scan_type)
 
 
+<<<<<<< HEAD
 CSV_HEADERS = [
     'ID', 'URL', 'Domain', 'Scan Type', 'Scan Date (UTC)',
     'Final Risk Score', 'Risk Level', 'Prevention Action',
@@ -237,6 +245,24 @@ def export_pdf(scan_id):
     )
 
 
+=======
+@history_bp.route('/export/csv')
+def export_csv():
+    scans = ScanHistory.query.order_by(ScanHistory.scan_date.desc()).limit(1000).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'URL', 'Domain', 'Threat Score', 'Risk Category',
+                     'Scan Type', 'Domain Age (days)', 'SSL Valid', 'QR Content', 'Scan Date'])
+    for s in scans:
+        writer.writerow([s.id, s.url, s.domain, s.threat_score, s.risk_category,
+                         s.scan_type, s.domain_age_days, s.ssl_valid, s.qr_content, s.scan_date])
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = 'attachment; filename=neural-x-history.csv'
+    return response
+
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 @history_bp.route('/<int:scan_id>')
 def detail(scan_id):
     scan = ScanHistory.query.get_or_404(scan_id)

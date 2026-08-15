@@ -39,7 +39,11 @@
       <div class="glass-card">
         <div class="section-title"><i class="fas fa-download me-2"></i>Export</div>
         <div class="d-flex flex-column gap-2">
+<<<<<<< HEAD
           <a href="{{ url_for('history.export_pdf', scan_id=scan.id) }}" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+=======
+          <a href="/api/report/{{ scan.id }}" target="_blank" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
             <i class="fas fa-file-pdf me-2"></i>PDF Report
           </a>
           <a href="{{ url_for('history.index') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
@@ -81,10 +85,17 @@
 {% block scripts %}
 <style>
 .scan-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+<<<<<<< HEAD
 .meta-item{background:rgba(0,229,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
 .meta-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);}
 .meta-val{font-size:.9rem;font-weight:700;margin-top:2px;}
 .intel-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem;}
+=======
+.meta-item{background:rgba(51, 148, 159, 0.03);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
+.meta-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);}
+.meta-val{font-size:.9rem;font-weight:700;margin-top:2px;}
+.intel-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(12, 236, 221, 0.04);font-size:.85rem;}
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 .intel-key{color:var(--text-muted);font-size:.78rem;}
 .intel-val{color:var(--text);font-weight:500;text-align:right;}
 </style>

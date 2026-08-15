@@ -2,6 +2,10 @@
 
 import os
 from app import create_app
+<<<<<<< HEAD
+=======
+from app import db
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 
 app = create_app(os.getenv('FLASK_ENV', 'development'))
 
@@ -28,9 +32,18 @@ def inject_globals():
     return {'now': datetime.utcnow()}
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=int(os.getenv('PORT', 5000)),
         debug=os.getenv('FLASK_ENV', 'development') == 'development'
     )
+<<<<<<< HEAD
+=======
+
+ 
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f

@@ -80,10 +80,13 @@ def create_app(config_name=None):
         app.logger.setLevel(logging.INFO)
         app.logger.info('NEURAL-X startup')
 
+<<<<<<< HEAD
     # Register template filters
     from app.utils.helpers import register_template_filters
     register_template_filters(app)
 
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     # Register error handlers
     from app.utils.error_handlers import register_error_handlers
     register_error_handlers(app)
@@ -92,6 +95,7 @@ def create_app(config_name=None):
     with app.app_context():
         db.create_all()
 
+<<<<<<< HEAD
         # v4: additive auto-migration for existing databases (never drops/alters
         # existing columns or rows — see app/utils/db_migrate.py)
         try:
@@ -107,4 +111,6 @@ def create_app(config_name=None):
         except Exception as e:
             logging.getLogger(__name__).warning(f'v4 auto-migration skipped: {e}')
 
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     return app

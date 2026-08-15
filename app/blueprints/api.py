@@ -1,7 +1,11 @@
 """
 REST API Blueprint — /api/*
+<<<<<<< HEAD
 v2: adds /api/scan-journal, /api/journal-check endpoints.
 All existing v1 endpoints preserved with identical signatures.
+=======
+Provides JSON endpoints for all scan operations.
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 """
 
 import os
@@ -32,17 +36,31 @@ def _api_response(data=None, message='OK', status=200, error=None):
     return jsonify(payload), status
 
 
+<<<<<<< HEAD
 # ── /api/scan-url  (v1 preserved) ──────────────────────────────────────────
+=======
+# ── /api/scan-url ──────────────────────────────────────────────────────────
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 @api_bp.route('/scan-url', methods=['POST'])
 @limiter.limit('30 per minute')
 def api_scan_url():
     body = request.get_json(silent=True) or {}
+<<<<<<< HEAD
     url  = sanitize_url(body.get('url', '').strip())
     if not url:
         return _api_response(error='URL is required', status=400)
 
     result      = analyze_url(url)
     domain      = extract_domain(url)
+=======
+    url = sanitize_url(body.get('url', '').strip())
+    if not url:
+        return _api_response(error='URL is required', status=400)
+
+    result = analyze_url(url)
+    domain = extract_domain(url)
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     domain_info = {}
     try:
         domain_info = get_domain_intelligence(url)
@@ -56,15 +74,21 @@ def api_scan_url():
         risk_category=result['risk_category'],
         scan_type='url',
         domain_age_days=domain_info.get('domain_age_days'),
+<<<<<<< HEAD
         extra_data=json.dumps({
             'risk_factors':    result.get('risk_factors', []),
             'recommendations': result.get('recommendations', []),
         }),
+=======
+        extra_data=json.dumps({'risk_factors': result.get('risk_factors', []),
+                               'recommendations': result.get('recommendations', [])}),
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     )
     db.session.add(scan)
     db.session.commit()
 
     return _api_response(data={
+<<<<<<< HEAD
         'scan_id':        scan.id,
         'url':            url,
         'threat_score':   result['threat_score'],
@@ -203,6 +227,19 @@ def api_journal_check():
 
 
 # ── /api/scan-qr  (v1 preserved) ───────────────────────────────────────────
+=======
+        'scan_id': scan.id,
+        'url': url,
+        'threat_score': result['threat_score'],
+        'risk_category': result['risk_category'],
+        'risk_factors': result['risk_factors'],
+        'recommendations': result['recommendations'],
+        'domain_age_days': domain_info.get('domain_age_days'),
+    })
+
+
+# ── /api/scan-qr ───────────────────────────────────────────────────────────
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 @api_bp.route('/scan-qr', methods=['POST'])
 @limiter.limit('20 per minute')
 def api_scan_qr():
@@ -237,17 +274,30 @@ def api_scan_qr():
     db.session.commit()
 
     return _api_response(data={
+<<<<<<< HEAD
         'scan_id':      scan.id,
         'qr_found':     qr_result.get('qr_found'),
         'raw_content':  qr_result.get('raw_content'),
         'content_type': qr_result.get('classification', {}).get('content_type'),
         'threat_score': qr_result.get('threat_score'),
         'risk_category':qr_result.get('risk_category'),
+=======
+        'scan_id': scan.id,
+        'qr_found': qr_result.get('qr_found'),
+        'raw_content': qr_result.get('raw_content'),
+        'content_type': qr_result.get('classification', {}).get('content_type'),
+        'threat_score': qr_result.get('threat_score'),
+        'risk_category': qr_result.get('risk_category'),
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
         'risk_factors': qr_result.get('risk_factors', []),
     })
 
 
+<<<<<<< HEAD
 # ── /api/scan-image  (v1 preserved) ────────────────────────────────────────
+=======
+# ── /api/scan-image ────────────────────────────────────────────────────────
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 @api_bp.route('/scan-image', methods=['POST'])
 @limiter.limit('20 per minute')
 def api_scan_image():
@@ -280,6 +330,7 @@ def api_scan_image():
     db.session.commit()
 
     return _api_response(data={
+<<<<<<< HEAD
         'scan_id':        scan.id,
         'threat_score':   img_result['threat_score'],
         'risk_category':  img_result['risk_category'],
@@ -294,6 +345,22 @@ def api_scan_image():
 @api_bp.route('/history', methods=['GET'])
 def api_history():
     page     = request.args.get('page', 1, type=int)
+=======
+        'scan_id': scan.id,
+        'threat_score': img_result['threat_score'],
+        'risk_category': img_result['risk_category'],
+        'qr_codes': img_result.get('qr_codes', []),
+        'embedded_urls': img_result.get('embedded_urls', []),
+        'scam_keywords': img_result.get('scam_keywords', []),
+        'risk_factors': img_result.get('risk_factors', []),
+    })
+
+
+# ── /api/history ───────────────────────────────────────────────────────────
+@api_bp.route('/history', methods=['GET'])
+def api_history():
+    page = request.args.get('page', 1, type=int)
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     per_page = min(request.args.get('per_page', 20, type=int), 100)
     category = request.args.get('category')
     scan_type = request.args.get('type')
@@ -304,6 +371,7 @@ def api_history():
     if scan_type:
         q = q.filter_by(scan_type=scan_type)
 
+<<<<<<< HEAD
     pagination = q.order_by(ScanHistory.scan_date.desc()).paginate(
         page=page, per_page=per_page
     )
@@ -336,10 +404,47 @@ def api_stats():
 @api_bp.route('/report/<int:scan_id>', methods=['GET'])
 def api_report(scan_id):
     scan  = ScanHistory.query.get_or_404(scan_id)
+=======
+    pagination = q.order_by(ScanHistory.scan_date.desc()).paginate(page=page, per_page=per_page)
+
+    return _api_response(data={
+        'items': [s.to_dict() for s in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'page': page,
+    })
+
+
+# ── /api/stats ─────────────────────────────────────────────────────────────
+@api_bp.route('/stats', methods=['GET'])
+def api_stats():
+    total = ScanHistory.query.count()
+    cats = {}
+    for cat in ['Safe', 'Suspicious', 'High Risk', 'Critical Threat']:
+        cats[cat] = ScanHistory.query.filter_by(risk_category=cat).count()
+
+    types = {}
+    for t in ['url', 'qr', 'image']:
+        types[t] = ScanHistory.query.filter_by(scan_type=t).count()
+
+    return _api_response(data={
+        'total_scans': total,
+        'by_category': cats,
+        'by_type': types,
+        'threats_blocked': cats.get('High Risk', 0) + cats.get('Critical Threat', 0),
+    })
+
+
+# ── /api/report ────────────────────────────────────────────────────────────
+@api_bp.route('/report/<int:scan_id>', methods=['GET'])
+def api_report(scan_id):
+    scan = ScanHistory.query.get_or_404(scan_id)
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     extra = json.loads(scan.extra_data or '{}')
 
     from app.services.pdf_report import generate_pdf_report
     pdf_path = generate_pdf_report({
+<<<<<<< HEAD
         'id':             scan.id,
         'url':            scan.url,
         'domain':         scan.domain,
@@ -362,4 +467,22 @@ def api_report(scan_id):
         return _api_response(
             error='PDF generation failed (reportlab may not be installed)', status=500
         )
+=======
+        'id': scan.id,
+        'url': scan.url,
+        'domain': scan.domain,
+        'threat_score': scan.threat_score,
+        'risk_category': scan.risk_category,
+        'scan_date': scan.scan_date.isoformat() if scan.scan_date else '',
+        'scan_type': scan.scan_type,
+        'qr_content': scan.qr_content,
+        'risk_factors': extra.get('risk_factors', []),
+        'recommendations': extra.get('recommendations', []),
+        'screenshot_path': scan.screenshot_path,
+    })
+
+    if not pdf_path:
+        return _api_response(error='PDF generation failed (reportlab may not be installed)', status=500)
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     return _api_response(data={'pdf_url': f'/static/{pdf_path}', 'scan_id': scan_id})

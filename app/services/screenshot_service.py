@@ -5,16 +5,24 @@ Auto-deletes old screenshots, stores only the latest per domain.
 """
 
 import os
+<<<<<<< HEAD
 import re
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 import time
 import uuid
 import logging
 import glob
+<<<<<<< HEAD
 import urllib.parse
 from typing import Optional
 
 from app.utils.ssrf_guard import validate_public_url
 
+=======
+from typing import Optional
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 logger = logging.getLogger(__name__)
 
 SCREENSHOT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
@@ -41,6 +49,7 @@ def capture_screenshot(url: str, timeout: int = 15,
     Capture a website screenshot using Selenium.
     Returns the relative path to the saved screenshot, or None on failure.
     """
+<<<<<<< HEAD
     full_url = url if '://' in url else 'http://' + url
 
     # SSRF guard — never point a headless browser at internal infrastructure.
@@ -58,6 +67,21 @@ def capture_screenshot(url: str, timeout: int = 15,
     except Exception:
         domain_prefix = 'unknown'
 
+=======
+    _ensure_dir()
+
+    # Sanitize domain prefix for filename
+    import urllib.parse
+    try:
+        parsed = urllib.parse.urlparse(url if '://' in url else 'http://' + url)
+        domain_prefix = re.sub(r'[^a-zA-Z0-9\-]', '_', parsed.netloc)[:40]
+    except Exception:
+        domain_prefix = 'unknown'
+
+    import re
+    domain_prefix = re.sub(r'[^a-zA-Z0-9_\-]', '_', domain_prefix)[:40]
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     # Clean previous shots for this domain
     _clean_old_screenshots(domain_prefix)
 
@@ -86,7 +110,11 @@ def capture_screenshot(url: str, timeout: int = 15,
         driver.set_page_load_timeout(timeout)
 
         try:
+<<<<<<< HEAD
             driver.get(full_url)
+=======
+            driver.get(url if '://' in url else 'http://' + url)
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
             time.sleep(2)  # allow dynamic content to load
             driver.save_screenshot(filepath)
             logger.info(f'Screenshot saved: {filepath}')

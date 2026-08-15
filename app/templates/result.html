@@ -21,6 +21,7 @@
     <span class="text-cyan small">Result #{{ scan.id }}</span>
   </nav>
 
+<<<<<<< HEAD
   <!-- v4: Prevention Banner -->
   {% if final_risk and final_risk.prevention_action %}
   {% set pa = final_risk.prevention_action %}
@@ -59,6 +60,8 @@
   </div>
   {% endif %}
 
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
   <div class="row g-4">
 
     <!-- LEFT: Score + verdict -->
@@ -111,7 +114,11 @@
       <div class="glass-card">
         <div class="section-title"><i class="fas fa-download me-2"></i>Actions</div>
         <div class="d-flex flex-column gap-2">
+<<<<<<< HEAD
           <a href="{{ url_for('history.export_pdf', scan_id=scan.id) }}" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+=======
+          <a href="/api/report/{{ scan.id }}" target="_blank" class="btn-cyber-primary text-center text-decoration-none" style="font-size:.85rem;padding:10px;">
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
             <i class="fas fa-file-pdf me-2"></i>Download PDF Report
           </a>
           <a href="{{ url_for('scanner.scan_url') }}" class="btn-cyber-outline text-center text-decoration-none" style="font-size:.85rem;">
@@ -142,6 +149,7 @@
         {% endif %}
       </div>
 
+<<<<<<< HEAD
       <!-- v4: Multi-Signal Risk Analysis -->
       {% if final_risk and final_risk.signals %}
       <div class="glass-card mb-4">
@@ -184,6 +192,8 @@
       </div>
       {% endif %}
 
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
       <!-- Risk Factors -->
       {% if risk_factors %}
       <div class="glass-card mb-4">
@@ -292,9 +302,15 @@
 
 {% block scripts %}
 <style>
+<<<<<<< HEAD
 .url-display { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; padding:12px 16px; }
 .scan-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .meta-item { background:rgba(0,229,255,0.03); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+=======
+.url-display { background:rgba(206, 200, 200, 0.3); border:1px solid var(--border); border-radius:8px; padding:12px 16px; }
+.scan-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.meta-item { background:rgba(51, 204, 221, 0.03); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 .meta-label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); }
 .meta-val { font-size:.9rem; font-weight:700; margin-top:2px; }
 .intel-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:.85rem; }
@@ -303,6 +319,7 @@
 .screenshot-wrap { position:relative; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
 .screenshot-img { width:100%; display:block; opacity:.85; transition:opacity .3s; }
 .screenshot-wrap:hover .screenshot-img { opacity:1; }
+<<<<<<< HEAD
 .screenshot-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.6)); color:#fff; font-size:.75rem; padding:12px; }
 .rep-card { padding:12px; border-radius:8px; border:1px solid var(--border); }
 .rep-card.rep-danger { border-color:rgba(255,32,85,.3); background:rgba(255,32,85,.04); }
@@ -316,6 +333,14 @@
 .signal-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:4px; }
 .signal-score { font-size:1.5rem; font-weight:800; color:var(--cyan); }
 .signal-max { font-size:.8rem; color:var(--text-muted); font-weight:400; }
+=======
+.screenshot-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(199, 115, 115, 0.6)); color:#fff; font-size:.75rem; padding:12px; }
+.rep-card { padding:12px; border-radius:8px; border:1px solid var(--border); }
+.rep-card.rep-danger { border-color:rgba(255,32,85,.3); background:rgba(174, 90, 109, 0.04); }
+.rep-card.rep-ok { border-color:rgba(0,255,136,.2); background:rgba(74, 167, 123, 0.03); }
+.rep-name { font-size:.78rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px; }
+.rep-status { font-size:.85rem; font-weight:600; }
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', () => {

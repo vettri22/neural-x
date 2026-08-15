@@ -60,7 +60,11 @@
 
 {% block scripts %}
 <style>
+<<<<<<< HEAD
 .qr-type-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,140,0,.02);}
+=======
+.qr-type-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(209, 187, 161, 0.02);}
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 </style>
 <script>
 function previewFile(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{document.getElementById('filePreview').src=e.target.result;document.getElementById('fileNameLabel').textContent=file.name;document.getElementById('filePreviewWrap').style.display='block';};reader.readAsDataURL(file);}

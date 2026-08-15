@@ -11,8 +11,13 @@ services:
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///instance/neural_x.db}
+<<<<<<< HEAD
       - GOOGLE_SAFE_BROWSING_API_KEY=${GOOGLE_SAFE_BROWSING_API_KEY:-}
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+=======
+      - GOOGLE_SAFE_BROWSING_API_KEY=${GOOGLE_SAFE_BROWSING_API_KEY:-AIzaSyD9HBuOUlsaP3AvzRYmYeYZnFHLKStCF78}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-6714d0846c936e6a005f63196b28e57df5f633695cd3207e82f83ec85b139c7f}
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     volumes:
       - ./instance:/app/instance
       - ./logs:/app/logs

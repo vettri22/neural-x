@@ -12,7 +12,11 @@
       <h1 class="display-hero">NEURAL<span class="text-cyan">-X</span><br>AI Cyber Defense</h1>
       <p class="hero-sub mt-3">
         Enterprise-grade threat detection powered by machine learning.<br>
+<<<<<<< HEAD
         Analyze URLs, QR codes, and images for phishing, malware, and social engineering attacks.<br>Now with <span style="color:#bf60ff;">Journal Authenticity Verification</span> — detect fake journals &amp; predatory publishers.
+=======
+        Analyze URLs, QR codes, and images for phishing, malware, and social engineering attacks.
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
       </p>
       <div class="d-flex flex-wrap gap-3 mt-4">
         <a href="{{ url_for('scanner.scan_url') }}" class="btn-cyber-primary">
@@ -141,6 +145,7 @@
             {% endfor %}
           </div>
         </div>
+<<<<<<< HEAD
         <div class="col-sm-6 col-md-3">
           <a href="{{ url_for('scanner.scan_journal') }}" class="scan-module-card scan-journal text-decoration-none d-block">
             <div class="module-icon" style="background:rgba(191,96,255,0.15);border-color:rgba(191,96,255,0.3);">
@@ -151,6 +156,8 @@
             <div class="module-badge" style="color:#bf60ff;">New in v2</div>
           </a>
         </div>
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
       </div>
     </div>
 
@@ -227,6 +234,7 @@
 .display-hero { font-size: clamp(2.2rem,5vw,3.5rem); font-weight:900; line-height:1.05; background:linear-gradient(135deg,#fff 0%,#00e5ff 60%,#00ff88 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 .hero-sub { color:#6a8fa8; font-size:1.05rem; max-width:520px; line-height:1.6; }
 .feature-card { transition:all .3s; cursor:default; }
+<<<<<<< HEAD
 .feature-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,229,255,0.1); }
 .feature-icon { font-size:1.8rem; }
 .scan-row-link { text-decoration:none; }
@@ -236,6 +244,17 @@
 .scan-type-url   .scan-row-icon, .scan-row-icon { background:rgba(0,229,255,0.1); color:var(--cyan); }
 .scan-type-qr  .scan-row-icon { background:rgba(191,96,255,0.1); color:var(--purple); }
 .scan-type-image .scan-row-icon { background:rgba(255,140,0,0.1); color:var(--orange); }
+=======
+.feature-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(48, 137, 147, 0.1); }
+.feature-icon { font-size:1.8rem; }
+.scan-row-link { text-decoration:none; }
+.scan-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:rgba(0,229,255,0.02); transition:all .2s; }
+.scan-row:hover { background:rgba(60, 207, 223, 0.05); border-color:rgba(0,229,255,0.25); }
+.scan-row-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
+.scan-type-url   .scan-row-icon, .scan-row-icon { background:rgba(4, 195, 216, 0.1); color:var(--cyan); }
+.scan-type-qr  .scan-row-icon { background:rgba(159, 69, 218, 0.1); color:var(--purple); }
+.scan-type-image .scan-row-icon { background:rgba(155, 138, 117, 0.1); color:var(--orange); }
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 .scan-row-url { font-size:.84rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .scan-row-meta { font-size:.72rem; color:var(--text-muted); margin-top:1px; font-family:monospace; }
 </style>

@@ -34,6 +34,7 @@ def risk_badge_class(category: str) -> str:
         'Critical Threat': 'badge-critical',
     }
     return mapping.get(category, 'badge-unknown')
+<<<<<<< HEAD
 
 
 import json as _json
@@ -51,3 +52,5 @@ def register_template_filters(app):
             return _json.loads(value)
         except Exception:
             return {}
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f

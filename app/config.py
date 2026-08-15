@@ -1,7 +1,12 @@
 """
+<<<<<<< HEAD
 NEURAL-X Configuration Module — v2
 Supports development, testing, and production environments.
 v2: adds journal-specific config keys.
+=======
+NEURAL-X Configuration Module
+Supports development, testing, and production environments.
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 """
 
 import os
@@ -14,16 +19,25 @@ BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 class BaseConfig:
+<<<<<<< HEAD
+=======
+    """Base configuration shared across all environments."""
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     SECRET_KEY = os.getenv('SECRET_KEY', 'neural-x-super-secret-key-change-in-production')
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
 
+<<<<<<< HEAD
+=======
+    # Database
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
     }
 
+<<<<<<< HEAD
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     UPLOAD_DIR     = os.path.join(BASE_DIR, 'app', 'static', 'uploads')
     SCREENSHOT_DIR = os.path.join(BASE_DIR, 'app', 'static', 'screenshots')
@@ -98,6 +112,42 @@ class BaseConfig:
     JOURNAL_ROR_ENABLED       = os.getenv('JOURNAL_ROR_ENABLED', 'true').lower() == 'true'
     JOURNAL_PARALLEL_WORKERS  = int(os.getenv('JOURNAL_PARALLEL_WORKERS', '4'))
 
+=======
+    # File uploads
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    UPLOAD_DIR = os.path.join(BASE_DIR, 'app', 'static', 'uploads')
+    SCREENSHOT_DIR = os.path.join(BASE_DIR, 'app', 'static', 'screenshots')
+    ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+
+    # Caching
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300
+
+    # Rate limiting
+    RATELIMIT_DEFAULT = '100 per hour'
+    RATELIMIT_STORAGE_URL = 'memory://'
+
+    # Security APIs
+    GOOGLE_SAFE_BROWSING_API_KEY = os.getenv('GOOGLE_SAFE_BROWSING_API_KEY', '')
+    VIRUSTOTAL_API_KEY = os.getenv('VIRUSTOTAL_API_KEY', '')
+    ABUSEIPDB_API_KEY = os.getenv('ABUSEIPDB_API_KEY', '')
+
+    # Threat scoring weights
+    THREAT_SCORE_ML_WEIGHT = 0.30
+    THREAT_SCORE_REPUTATION_WEIGHT = 0.25
+    THREAT_SCORE_DOMAIN_WEIGHT = 0.20
+    THREAT_SCORE_SSL_WEIGHT = 0.10
+    THREAT_SCORE_KEYWORDS_WEIGHT = 0.15
+
+    # Screenshot settings
+    SCREENSHOT_TIMEOUT = 15
+    SCREENSHOT_WIDTH = 1280
+    SCREENSHOT_HEIGHT = 720
+
+    # Pagination
+    HISTORY_PER_PAGE = 20
+
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
@@ -113,12 +163,15 @@ class TestingConfig(BaseConfig):
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     CACHE_TYPE = 'NullCache'
+<<<<<<< HEAD
     # Disable external calls in tests
     JOURNAL_DOAJ_ENABLED     = False
     JOURNAL_CROSSREF_ENABLED = False
     JOURNAL_OPENALEX_ENABLED = False
     JOURNAL_CONTENT_SCAN     = False
     JOURNAL_ROR_ENABLED      = False
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 
 
 class ProductionConfig(BaseConfig):
@@ -127,16 +180,32 @@ class ProductionConfig(BaseConfig):
         'DATABASE_URL',
         f'sqlite:///{os.path.join(BASE_DIR, "instance", "neural_x.db")}'
     )
+<<<<<<< HEAD
     WTF_CSRF_ENABLED = True
     SESSION_COOKIE_SECURE    = True
     SESSION_COOKIE_HTTPONLY  = True
     SESSION_COOKIE_SAMESITE  = 'Lax'
+=======
+    CACHE_TYPE = 'SimpleCache'
+    WTF_CSRF_ENABLED = True
+
+    # Production security
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)
 
 
 config_by_name = {
     'development': DevelopmentConfig,
+<<<<<<< HEAD
     'testing':     TestingConfig,
     'production':  ProductionConfig,
     'default':     DevelopmentConfig,
+=======
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig,
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 }

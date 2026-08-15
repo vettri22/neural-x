@@ -7,7 +7,11 @@ LABEL description="NEURAL-X AI Cyber Defense Platform"
 # System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # OpenCV dependencies
+<<<<<<< HEAD
     libgl1-mesa-glx \
+=======
+    libgl1\
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
     libglib2.0-0 \
     libsm6 \
     libxext6 \

@@ -24,6 +24,7 @@
 
 html { scroll-behavior: smooth; }
 
+<<<<<<< HEAD
 /* Bootstrap 5.3's .text-muted / .text-body-secondary ship with !important
    and a dark-gray default calibrated for LIGHT backgrounds
    (--bs-secondary-color ≈ rgba(33,37,41,.75)). On this dark theme that
@@ -37,6 +38,8 @@ html { scroll-behavior: smooth; }
   opacity: 1 !important;
 }
 
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
 body {
   background: var(--bg-dark);
   color: var(--text);
@@ -491,6 +494,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.4); }
+<<<<<<< HEAD
 
 /* ============================================================
    NEURAL-X v2 — Journal Authenticity Module Additions
@@ -587,3 +591,5 @@ body {
   background: rgba(191,96,255,0.1);
   border-color: rgba(191,96,255,0.3);
 }
+=======
+>>>>>>> 99727748a15251a8f4d92432e4608bc61952b66f
